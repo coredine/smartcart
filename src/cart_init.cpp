@@ -7,8 +7,15 @@ const String password = "********";
 
 WebServer server(80);
 
+wl_status_t connectToStoreWifi(String storeSsid, String storePassword) {
+  Serial.println("Trying to connect to "+storeSsid+".");
+  WiFi.begin(storeSsid, storePassword);
+  return (wl_status_t) WiFi.waitForConnectResult();
+}
+
 void cartInitSetup(void)
 {
+  WiFi.mode(WIFI_AP_STA);
   Serial.println("Creating \"" + ssid + "\" access point.");
 
   if (!WiFi.softAP(ssid, password))
@@ -26,28 +33,28 @@ void cartInitSetup(void)
 
   server.on("/init", HTTP_POST, []() {
     Serial.println("Launching the init process...");
-    // Need to connect to the WiFi
     auto storeSsid = server.arg("ssid");
-    auto storePassword = server.arg("password"); 
+    auto wiFiStatus = connectToStoreWifi(storeSsid, server.arg("password"));
+    
+    Serial.println("WiFi status is "+wiFiStatus);
 
-    // not fully functionnal
-    WiFi.begin(storeSsid, storePassword);
-
-    auto connectionSuccess = false;
-    for(auto i = 0; i++; i < 5) {
-      delay(500);
-      Serial.println("Attempting to connect to "+storeSsid+"...");
-  
-      if(WiFi.status() == WL_CONNECTED) {
-        connectionSuccess = true;
-        break;
-      }
-    }
-
-    if(!connectionSuccess) {
-      server.send(403, "application/json", "{\"message\" : \"Unable to connect to "+storeSsid+" network.\"}");
+    switch (wiFiStatus)
+    {
+    case WL_NO_SSID_AVAIL:
+      server.send(404, "application/json", "{\"message\" : \"The network "+storeSsid+" does not exists.\"}");
+      return;
+    case WL_CONNECT_FAILED:
+      server.send(400, "application/json", "{\"message\" : \"Enable to connect to "+storeSsid+", it maybe due to an invalid password.\"}");
+      return;
+    case WL_CONNECTED:
+      Serial.println("WiFi connection establish.");
+      break;
+    default:
+      server.send(500, "application/json", "{\"message\" : \"Internal Server Error.\"}");
       return;
     }
+
+    Serial.println("See serial logs...");
 
     // Then try to request the server
     auto backendIp = server.arg("backendIp");
