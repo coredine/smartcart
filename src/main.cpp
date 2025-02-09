@@ -1,14 +1,24 @@
 #include <Arduino.h>
+#include <WiFi.h>
+#include <WebServer.h>
+#include <cart_init.h>
 
-#define BUILT_IN_LED 2
+// temporary boolean for activating cart setup
+#define IS_CART_SETUP true
 
-void setup() {
-  pinMode(BUILT_IN_LED, OUTPUT);
+void setup(void)
+{
+  Serial.begin(9600);
+  if (IS_CART_SETUP)
+  {
+    cartInitSetup();
+  }
 }
 
-void loop() {
-  delay(3000);
-  digitalWrite(BUILT_IN_LED, LOW);
-  delay(3000);
-  digitalWrite(BUILT_IN_LED, HIGH);
+void loop(void)
+{
+  if (IS_CART_SETUP)
+  {
+    cartInitLoop();
+  }
 }
