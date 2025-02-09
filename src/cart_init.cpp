@@ -36,7 +36,7 @@ void cartInitSetup(void)
     auto storeSsid = server.arg("ssid");
     auto wiFiStatus = connectToStoreWifi(storeSsid, server.arg("password"));
     
-    Serial.println("WiFi status is "+wiFiStatus);
+    Serial.print("WiFi status is " + String(wiFiStatus)+".");
 
     switch (wiFiStatus)
     {

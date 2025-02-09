@@ -6,7 +6,7 @@
 // temporary boolean for activating cart setup
 #define IS_CART_SETUP true
 
-const String PROJECT_VERSION = "0.1.1";
+const String PROJECT_VERSION = "0.1.2";
 
 void setup(void)
 {
