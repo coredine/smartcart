@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 
 const String ssid = "ESP32";
 const String password = "********";
@@ -28,47 +30,68 @@ void cartInitSetup(void)
   Serial.println(WiFi.softAPIP());
 
   server.on("/setup", HTTP_GET, []() {
-    server.send(200, "text/html", "<!DOCTYPE html><html lang=\"en\"><head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <title>Setup SmartCart</title></head><body> <form method=\"post\" action=\"/init\" style=\"width: 400px; display: flex; flex-direction: column; gap: 10px\"> <h1 style=\"margin: 0px;\">Cart Setup</h1> <div style=\"display: flex; flex-direction: column; gap: 8px;\"> <input name=\"backendIp\" type=\"text\" placeholder=\"Backend IP\" /> <input name=\"ssid\" type=\"text\" placeholder=\"WiFi SSID\" /> <input name=\"password\" type=\"password\" placeholder=\"WiFi Password\" /> <input name=\"serviceTag\" type=\"text\" placeholder=\"Service Tag\" /> </div> <button style=\"width: 80px;\">Submit</button> </form></body></html>");
+    server.send(200, "text/html", "<!DOCTYPE html><html lang=\"en\"><head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <title>Setup SmartCart</title></head><body> <form method=\"post\" action=\"/init\" style=\"width: 400px; display: flex; flex-direction: column; gap: 10px\"> <h1 style=\"margin: 0px;\">Cart Initialization</h1> <div style=\"display: flex; flex-direction: column; gap: 20px;\"> <div style=\"display: flex; flex-direction: column; gap: 8px;\"> <h2 style=\"margin: 0px;\">Wifi Info</h2> <input required name=\"ssid\" type=\"text\" placeholder=\"SSID*\" /> <input required name=\"password\" type=\"password\" placeholder=\"Password*\" /> </div> <div style=\"display: flex; flex-direction: column; gap: 8px;\"> <h2 style=\"margin: 0px;\">Backend info</h2> <input required name=\"backendUrl\" type=\"text\" placeholder=\"Backend URL*\" /> <!-- For now it is an input, normal it is stored in the cart SD. --> <input required name=\"serviceTag\" type=\"text\" placeholder=\"Service Tag*\" /> <input required name=\"securityCode\" type=\"text\" placeholder=\"Security Code*\" /> </div> </div> <button style=\"width: 70px;\">Submit</button> </form></body></html>");
   });
 
   server.on("/init", HTTP_POST, []() {
     Serial.println("Launching the init process...");
+
+    // Connect the ESP32 to the store WiFi.
     auto storeSsid = server.arg("ssid");
     auto wiFiStatus = connectToStoreWifi(storeSsid, server.arg("password"));
     
-    Serial.print("WiFi status is " + String(wiFiStatus)+".");
+    Serial.println("WiFi status is " + String(wiFiStatus)+".");
 
     switch (wiFiStatus)
     {
     case WL_NO_SSID_AVAIL:
-      server.send(404, "application/json", "{\"message\" : \"The network "+storeSsid+" does not exists.\"}");
+      server.send(404, "application/json", "The network \""+storeSsid+"\" does not exists.");
       return;
     case WL_CONNECT_FAILED:
-      server.send(400, "application/json", "{\"message\" : \"Enable to connect to "+storeSsid+", it maybe due to an invalid password.\"}");
+      server.send(400, "application/json", "Enable to connect to \""+storeSsid+"\", it maybe due to an invalid password.");
       return;
     case WL_CONNECTED:
       Serial.println("WiFi connection establish.");
       break;
     default:
-      server.send(500, "application/json", "{\"message\" : \"Internal Server Error.\"}");
+      server.send(500, "application/json", "Internal Server Error.");
       return;
     }
 
-    Serial.println("See serial logs...");
+    // Call the server to add the cart in the system.
+    JsonDocument body;
+    body["serviceTag"] = server.arg("serviceTag");
+    body["securityCode"] = server.arg("securityCode");
 
-    // Then try to request the server
-    auto backendIp = server.arg("backendIp");
+    HTTPClient http;
+    http.begin(server.arg("backendUrl")+"/carts");
+    http.addHeader("Content-Type", "application/json");
+    http.setTimeout(5000);
+    auto responseStatus = http.POST(body.as<String>());
 
-    // if response success ...
-    auto serviceTag = server.arg("serviceTag");
+    if(responseStatus == -1) {
+      http.end();
+      body.clear();
+      server.send(408, "application/json", "The SmartCart is enable to join the server. Verify that you have specify the right url or that the server is on the \""+storeSsid+"\" network.");
+      return;
+    }
 
-    // else ...
+    auto responseBody = http.getString();
+    http.end();
+    body.clear();
 
-    server.send(200, "text/plain", "See serial logs...");
+    if(responseStatus == 200) {
+      // step to save the data, etc in the SD card and to block the setup route.
+      server.send(200, "application/json", "The cart was successfuly added. The next step is to restart the cart.");
+      return;
+    } else {
+      server.send(responseStatus, "application/json", responseBody);
+      return;
+    }
   });
 
   server.onNotFound([]() {
-    server.send(404, "application/json", "{\"message\": \"Not Found\"}");
+    server.send(404, "application/json", "Not Found");
   });
 
   server.begin();
