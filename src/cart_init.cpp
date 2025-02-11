@@ -80,9 +80,9 @@ void cartInitSetup(void)
     http.end();
     body.clear();
 
-    if(responseStatus == 200) {
+    if(responseStatus == 201) {
       // step to save the data, etc in the SD card and to block the setup route.
-      server.send(200, "application/json", "The cart was successfuly added. The next step is to restart the cart.");
+      server.send(201, "application/json", "The cart was successfuly added. The next step is to restart the cart.");
       return;
     } else {
       server.send(responseStatus, "application/json", responseBody);
