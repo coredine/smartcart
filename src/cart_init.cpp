@@ -3,6 +3,10 @@
 #include <WebServer.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <FS.h>
+#include <SD.h>
+
+#define FORMAT_LITTLEFS_IF_FAILED true
 
 const String ssid = "ESP32";
 const String password = "********";
@@ -29,8 +33,22 @@ void cartInitSetup(void)
   Serial.println("The ip Address is : ");
   Serial.println(WiFi.softAPIP());
 
-  server.on("/setup", HTTP_GET, []() {
-    server.send(200, "text/html", "<!DOCTYPE html><html lang=\"en\"><head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <title>Setup SmartCart</title></head><body> <form method=\"post\" action=\"/init\" style=\"width: 400px; display: flex; flex-direction: column; gap: 10px\"> <h1 style=\"margin: 0px;\">Cart Initialization</h1> <div style=\"display: flex; flex-direction: column; gap: 20px;\"> <div style=\"display: flex; flex-direction: column; gap: 8px;\"> <h2 style=\"margin: 0px;\">Wifi Info</h2> <input required name=\"ssid\" type=\"text\" placeholder=\"SSID*\" /> <input required name=\"password\" type=\"password\" placeholder=\"Password*\" /> </div> <div style=\"display: flex; flex-direction: column; gap: 8px;\"> <h2 style=\"margin: 0px;\">Backend info</h2> <input required name=\"backendUrl\" type=\"text\" placeholder=\"Backend URL*\" /> <!-- For now it is an input, normal it is stored in the cart SD. --> <input required name=\"serviceTag\" type=\"text\" placeholder=\"Service Tag*\" /> <input required name=\"securityCode\" type=\"text\" placeholder=\"Security Code*\" /> </div> </div> <button style=\"width: 70px;\">Submit</button> </form></body></html>");
+  if (!SD.begin()) {
+    Serial.println("Enable to mount SD card.");
+    return;
+  }
+
+  auto cardType = SD.cardType();
+  if(cardType == CARD_NONE) {
+    Serial.println("No SD card found.");
+    return;
+  }
+
+  server.serveStatic("/setup.html", SD, "/public/setup.html");
+
+  server.on("/setup", HTTP_GET, []() { 
+    server.sendHeader("Location", "/setup.html", true);
+    server.send(302, "text/plain", "");
   });
 
   server.on("/init", HTTP_POST, []() {
