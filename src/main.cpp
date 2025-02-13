@@ -1,14 +1,12 @@
 #include <Arduino.h>
-
-#define BUILT_IN_LED 2
+#include <SmartCartScale/SmartCartScale.h>
 
 void setup() {
-  pinMode(BUILT_IN_LED, OUTPUT);
+  Serial.begin(9600);
+  delay(1000);
+  //setUpHX711();
 }
 
 void loop() {
-  delay(3000);
-  digitalWrite(BUILT_IN_LED, LOW);
-  delay(3000);
-  digitalWrite(BUILT_IN_LED, HIGH);
+  //if (LoadCells.update()) updateCurrentWeight();
 }
