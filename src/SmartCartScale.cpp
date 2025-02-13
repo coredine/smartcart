@@ -1,8 +1,8 @@
 #include <SmartCartScale/SmartCartScale.h>
-#include <stdint.h>
 #include <SmartCartScale/ScaleState.h>
 #include <SmartCartScale/DataFluctuationRecord.h>
 #include <HX711/HX711_ADC.h>
+#include <stdint.h>
 
 const bool TARE_ON_STARTUP = true; 
 const bool CALIBRATE_ON_STARTUP = true;
