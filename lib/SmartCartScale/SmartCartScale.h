@@ -1,7 +1,7 @@
 #pragma once
-#include <SmartCartScale/TimedTask.h>
-#include <SmartCartScale/ScaleState.h>
-#include <SmartCartScale/DataFluctuationRecord.h>
+#include <TimedTask.h>
+#include <ScaleState.h>
+#include <DataFluctuationRecord.h>
 #include <HX711/HX711_ADC.h>
 
 template <class T>
@@ -29,4 +29,5 @@ class SmartCartScale {
         void calibrate();
         void reCalibrate();
         void setTimedTasks();
+        void update();
 };

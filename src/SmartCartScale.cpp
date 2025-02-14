@@ -1,10 +1,10 @@
-#include <SmartCartScale/SmartCartScale.h>
-#include <SmartCartScale/ScaleState.h>
-#include <SmartCartScale/DataFluctuationRecord.h>
+#include <SmartCartScale.h>
+#include <ScaleState.h>
+#include <DataFluctuationRecord.h>
 #include <HX711/HX711_ADC.h>
 #include <stdint.h>
 #include <Input.h>
-#include <SmartCartScale/TimedTask.h>
+#include <TimedTask.h>
 
 SmartCartScale::SmartCartScale(uint8_t dataPin = 23, uint8_t serialClockPin = 19) : LoadCells(dataPin, serialClockPin), record(0) {
   this->setTimedTasks();
@@ -24,7 +24,7 @@ void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNega
   
 void SmartCartScale::updateCurrentWeight() { //no error
   currentWeight = LoadCells.getData();
-  Serial.println("Weight: " + String(currentWeight) + " || " + record.getFluctuationResults() + " || ");
+  Serial.println("Weight: " + String(currentWeight) + " || " + record.getFluctuationResults() + " || " + currentState);
 }
 
 void SmartCartScale::updateScaleStatus() {
@@ -49,14 +49,22 @@ void SmartCartScale::calibrate() {
 }
 
 void SmartCartScale::reCalibrate() {
-  Serial.println("CAL");
+  if (currentState == VALID) {
+    calibrationFactor = LoadCells.getNewCalibration(currentUnfluctuatedWeight);
+    Serial.println("New calibrationFactor: " + calibrationFactor);
+  }
 }
 
 void SmartCartScale::setTimedTasks() {
-  TimedTask<SmartCartScale> temp1(5000); //or auto temp2 = new TimedTask<SmartCartScale>(500);
-  TimedTask<SmartCartScale> temp2 = TimedTask<SmartCartScale>(500);
+  TimedTask<SmartCartScale> temp1(5000, this); //or auto temp2 = new TimedTask<SmartCartScale>(500);
+  TimedTask<SmartCartScale> temp2 = TimedTask<SmartCartScale>(500, this);
   timedCalibration = &temp1;
   timedWeightUpdate = &temp2;
   (*timedCalibration).addTask(&SmartCartScale::reCalibrate); //or (*timedCalibration).addTask();
   (*timedWeightUpdate).addTask(&SmartCartScale::updateCurrentWeight); //https://stackoverflow.com/questions/67150355/how-do-i-dereference-a-pointer-to-an-object-in-c
+}
+
+void SmartCartScale::update() {
+  timedCalibration->invoke();
+  timedWeightUpdate->invoke();
 }

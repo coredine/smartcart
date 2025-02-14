@@ -1,8 +1,7 @@
 #include <Arduino.h>
-#include <SmartCartScale/SmartCartScale.h>
-#include <Input.h>
-#include <SmartCartScale/TimedTask.h>
-#include <SmartCartScale/DataFluctuationRecord.h>
+#include <SmartCartScale.h>
+#include <TimedTask.h>
+#include <DataFluctuationRecord.h>
 
 SmartCartScale scale(23, 19);
 
@@ -13,5 +12,5 @@ void setup() {
 }
 
 void loop() {
-
+  scale.update();
 }

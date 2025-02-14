@@ -13,24 +13,27 @@ class TimedTask {
     public:
         uint64_t timeSnapshot;
         uint16_t executionRateMillis;
+        T *instance;
         std::vector<void (T::*)()> tasks; //void (*)() != void (Object::*)()
 
-        TimedTask(uint16_t executionRateMillis);
+        TimedTask(uint16_t executionRateMillis, T *instance);
         void invoke();
         bool canExecute();
         void addTask(void(T::*taskPointer)());
 };
 
 template <typename T>
-TimedTask<T>::TimedTask(uint16_t executionRateMillis) {
+TimedTask<T>::TimedTask(uint16_t executionRateMillis, T *instance) {
+    this->instance = instance;
     this->timeSnapshot = millis();
     this->executionRateMillis = executionRateMillis;
 };
 
+//must use '.*' or '->*' to call pointer-to-member function in 'task (...)', e.g. '(... ->* task) (...)'
 template <typename T>
 void TimedTask<T>::invoke() {
     if (this->canExecute()) {
-        for (void (T::*task)() : tasks) task();
+        for (void (T::*task)() : tasks) (instance->*task)(); //https://stackoverflow.com/questions/10901959/function-pointers-in-c-error-must-use-or-to-call-pointer-to-memb
         this->timeSnapshot = millis();
     }
 };
