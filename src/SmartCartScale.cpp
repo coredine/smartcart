@@ -6,9 +6,9 @@
 #include <Input.h>
 #include <TimedTask.h>
 
-SmartCartScale::SmartCartScale(uint8_t dataPin = 23, uint8_t serialClockPin = 19) : 
+SmartCartScale::SmartCartScale(uint8_t dataPin = 23, uint8_t serialClockPin = 19, uint16_t calibrationRate = 5000, uint16_t weightUpdateRate = 200): 
 expectedWeight(0),
-currentUnfluctuatedWeight(0),
+currentUnfluctuatedWeight(900),
 currentWeight(0), 
 calibrationFactor(0),
 validationMargin(0.25),
@@ -17,8 +17,8 @@ segmentedExpectedWeight(0),
 currentState(VALID),
 LoadCells(dataPin, serialClockPin), 
 record(0),
-timedCalibration(5000, this), //auto temp2 = new TimedTask<SmartCartScale>(500);/TimedTask<SmartCartScale> temp1(5000, this);/TimedTask<SmartCartScale> temp2 = TimedTask<SmartCartScale>(500, this);
-timedWeightUpdate(200, this) 
+timedCalibration(calibrationRate, this), //auto temp2 = new TimedTask<SmartCartScale>(500);/TimedTask<SmartCartScale> temp1(5000, this);/TimedTask<SmartCartScale> temp2 = TimedTask<SmartCartScale>(500, this);
+timedWeightUpdate(weightUpdateRate, this) 
 {
   timedCalibration.addTask(&SmartCartScale::reCalibrate); //or (*timedCalibration).addTask();
   timedWeightUpdate.addTask(&SmartCartScale::updateCurrentWeight); //https://stackoverflow.com/questions/67150355/how-do-i-dereference-a-pointer-to-an-object-in-c
@@ -36,9 +36,9 @@ void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNega
   };
 }
   
-void SmartCartScale::updateCurrentWeight() { //no error
+void SmartCartScale::updateCurrentWeight() { 
   currentWeight = LoadCells.getData();
-  Serial.println("Weight: " + String(currentWeight) + " || "); //currentState //record.getFluctuationResults()
+  Serial.println("Weight: " + String(currentWeight) + " || " + record.getFluctuationResults() + " || " + currentState);
 }
 
 void SmartCartScale::updateScaleStatus() {
