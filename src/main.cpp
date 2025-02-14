@@ -7,10 +7,11 @@
 std::vector<SimulationPoint> simPoints = 
 {
   SimulationPoint("Microphone", 907.88),
-  SimulationPoint("Phone", 195)
+  SimulationPoint("Phone", 195),
+  SimulationPoint("Blue Snowball Microphone", 460) 
 };
-SmartCartScale scale(23, 19, 5000, 200);
-ShoppingSimulation sim(&scale, 10000, &simPoints);
+SmartCartScale scale(23, 19, 12000, 600);
+ShoppingSimulation sim(&scale, 20000, &simPoints);
 
 void setup() {
   Serial.begin(57600);

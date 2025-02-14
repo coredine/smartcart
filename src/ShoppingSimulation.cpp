@@ -16,12 +16,16 @@ String SimulationPoint::toString() {
 ShoppingSimulation::ShoppingSimulation(SmartCartScale *scale, uint16_t updateRate, std::vector<SimulationPoint> *simulationPoints) 
 : timedUpdate(TimedTask<ShoppingSimulation>(updateRate, this)) {
     this->scale = scale;
+    this->currentIndex = 0;
     this->simulationPoints = simulationPoints;
     this->timedUpdate.addTask(&ShoppingSimulation::changePoint);
 }
 
 void ShoppingSimulation::changePoint() {
-    
+    this->scale->expectedWeight = simulationPoints->at(currentIndex).weight;
+    Serial.println("[SIM] New expected weight: {" + simulationPoints->at(currentIndex).name + ", " + String(this->scale->expectedWeight) + "}");
+    if ((currentIndex + 1) < simulationPoints->size()) currentIndex++;
+    else currentIndex = 0;
 }
 
 void ShoppingSimulation::update() {

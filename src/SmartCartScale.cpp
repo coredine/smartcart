@@ -11,8 +11,8 @@ expectedWeight(0),
 currentUnfluctuatedWeight(900),
 currentWeight(0), 
 calibrationFactor(0),
-validationMargin(0.25),
-fixedValidationMargin(50),
+validationMargin(0.15),
+fixedValidationMargin(20),
 segmentedExpectedWeight(0),
 currentState(VALID),
 LoadCells(dataPin, serialClockPin), 
@@ -38,12 +38,13 @@ void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNega
   
 void SmartCartScale::updateCurrentWeight() { 
   currentWeight = LoadCells.getData();
-  Serial.println("Weight: " + String(currentWeight) + " || " + record.getFluctuationResults() + " || " + currentState);
+  updateScaleStatus();
+  Serial.println("Weight: " + String(currentWeight) + " | " + record.getFluctuationResults() + " | " + currentState);
 }
 
 void SmartCartScale::updateScaleStatus() {
   segmentedExpectedWeight = ((expectedWeight * validationMargin) + fixedValidationMargin);
-  if ( (currentWeight > (expectedWeight - segmentedExpectedWeight)) || (currentWeight < (expectedWeight + segmentedExpectedWeight))) {
+  if ((currentWeight > (expectedWeight - segmentedExpectedWeight)) && (currentWeight < (expectedWeight + segmentedExpectedWeight))) {
     currentState = VALID;
     currentUnfluctuatedWeight = expectedWeight;
     record.reset(expectedWeight);
@@ -70,11 +71,12 @@ void SmartCartScale::reCalibrate() {
 }
 
 void SmartCartScale::displayCalibrationFactor() {
-  Serial.println("New calibrationFactor: " + String(this->calibrationFactor));
+  Serial.println("New calibrationFactor(for expected weight of: " + String(this->expectedWeight) + ") ->" + String(this->calibrationFactor));
 }
 
 void SmartCartScale::update() {
   LoadCells.update();
+  record.update(currentWeight);
   timedWeightUpdate.invoke();
   timedCalibration.invoke();
 }

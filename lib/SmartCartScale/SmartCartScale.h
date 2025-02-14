@@ -12,7 +12,7 @@
 
 class SmartCartScale {
     public:
-        float expectedWeight; 
+        float expectedWeight; //<===== 
         float currentUnfluctuatedWeight; 
         float currentWeight; 
         float calibrationFactor; 
