@@ -26,7 +26,7 @@ template <typename T>
 TimedTask<T>::TimedTask(uint16_t executionRateMillis, T *instance) {
     this->instance = instance;
     this->timeSnapshot = millis();
-    this->executionRateMillis = executionRateMillis;
+    this->executionRateMillis = executionRateMillis; 
 };
 
 //must use '.*' or '->*' to call pointer-to-member function in 'task (...)', e.g. '(... ->* task) (...)'
