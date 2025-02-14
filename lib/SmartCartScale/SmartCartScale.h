@@ -2,7 +2,7 @@
 #include <TimedTask.h>
 #include <ScaleState.h>
 #include <DataFluctuationRecord.h>
-#include <HX711/HX711_ADC.h>
+#include <HX711_ADC.h>
 
 template <class T>
 class TimedTask; //forward declaration since SmartCartScale is getting declared before TimedTask? (https://stackoverflow.com/questions/2133250/x-does-not-name-a-type-error-in-c)

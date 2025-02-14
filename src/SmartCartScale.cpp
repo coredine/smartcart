@@ -1,7 +1,7 @@
 #include <SmartCartScale.h>
 #include <ScaleState.h>
 #include <DataFluctuationRecord.h>
-#include <HX711/HX711_ADC.h>
+#include <HX711_ADC.h>
 #include <stdint.h>
 #include <Input.h>
 #include <TimedTask.h>
