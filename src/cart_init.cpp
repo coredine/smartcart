@@ -1,13 +1,14 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
-#include <HTTPClient.h>
+#include <ArduinoHttpClient.h>
 #include <ArduinoJson.h>
 #include <SD.h>
 
 const String ssid = "ESP32";
 const String password = "********";
 
+WiFiClient wifi;
 WebServer server(80);
 
 void initCart(void);
@@ -64,6 +65,27 @@ void cartInitSetup(void)
 void cartInitLoop(void)
 {
   server.handleClient();
+  delay(2);
+}
+
+std::tuple<int, String> requestSystemEntry(String backendUrl, JsonDocument body) {
+  HttpClient http(wifi, backendUrl, 8080);
+  http.setTimeout(3000);
+  http.post("/carts", "application/json", body.as<String>());
+  auto responseStatus = http.responseStatusCode();
+  
+  Serial.println("Status ="+String(responseStatus));
+  String responseBody = "";
+
+  if(responseStatus != -2) {
+    responseBody = http.responseBody();
+    Serial.println("ResponseBody ="+responseBody);
+  }
+  
+  http.stop();
+  http.flush();
+  body.clear();
+  return {responseStatus, responseBody};
 }
 
 void initCart(void)
@@ -97,23 +119,13 @@ void initCart(void)
   body["serviceTag"] = server.arg("serviceTag");
   body["securityCode"] = server.arg("securityCode");
 
-  HTTPClient http;
-  http.begin(server.arg("backendUrl") + "/carts");
-  http.addHeader("Content-Type", "application/json");
-  http.setTimeout(5000);
-  auto responseStatus = http.POST(body.as<String>());
+  auto [responseStatus, responseBody] = requestSystemEntry(server.arg("backendUrl"), body);
 
-  if (responseStatus == -1)
+  if (responseStatus == -2)
   {
-    http.end();
-    body.clear();
     server.send(408, "application/json", "The SmartCart is enable to join the server. Verify that you have specify the right url or that the server is on the \"" + storeSsid + "\" network.");
     return;
   }
-
-  auto responseBody = http.getString();
-  http.end();
-  body.clear();
 
   if (responseStatus == 201)
   {
