@@ -6,11 +6,25 @@
 #include <Input.h>
 #include <TimedTask.h>
 
-SmartCartScale::SmartCartScale(uint8_t dataPin = 23, uint8_t serialClockPin = 19) : LoadCells(dataPin, serialClockPin), record(0) {
-  this->setTimedTasks();
+SmartCartScale::SmartCartScale(uint8_t dataPin = 23, uint8_t serialClockPin = 19) : 
+expectedWeight(0),
+currentUnfluctuatedWeight(0),
+currentWeight(0), 
+calibrationFactor(0),
+validationMargin(0.25),
+fixedValidationMargin(50),
+segmentedExpectedWeight(0),
+currentState(VALID),
+LoadCells(dataPin, serialClockPin), 
+record(0),
+timedCalibration(5000, this), //auto temp2 = new TimedTask<SmartCartScale>(500);/TimedTask<SmartCartScale> temp1(5000, this);/TimedTask<SmartCartScale> temp2 = TimedTask<SmartCartScale>(500, this);
+timedWeightUpdate(1000, this) 
+{
+  timedCalibration.addTask(&SmartCartScale::reCalibrate); //or (*timedCalibration).addTask();
+  timedWeightUpdate.addTask(&SmartCartScale::updateCurrentWeight); //https://stackoverflow.com/questions/67150355/how-do-i-dereference-a-pointer-to-an-object-in-c
 }
 
-void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNegative = false, uint16_t startingDelay = 5000, uint8_t gain = 128, signed long calibrationFactor = 0) {
+void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNegative = false, uint16_t startingDelay = 5000, uint8_t gain = 128, float calibrationFactor = 50) {
   Serial.println("SmartCart scale system starting...");
   LoadCells.begin(gain);
   if (reverseNegative) LoadCells.setReverseOutput();
@@ -24,7 +38,7 @@ void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNega
   
 void SmartCartScale::updateCurrentWeight() { //no error
   currentWeight = LoadCells.getData();
-  Serial.println("Weight: " + String(currentWeight) + " || " + record.getFluctuationResults() + " || " + currentState);
+  Serial.println("Weight: " + String(currentWeight) + " || "); //currentState //record.getFluctuationResults()
 }
 
 void SmartCartScale::updateScaleStatus() {
@@ -43,28 +57,26 @@ void SmartCartScale::calibrate() {
   float knownsMass = readFloatBlock(); //2lb/907grams microphone, 200g/0.44lb phone
   LoadCells.refreshDataSet();
   calibrationFactor = LoadCells.getNewCalibration(knownsMass); //returns and sets
-  Serial.println("New calibration factor: " + String(calibrationFactor));
+  displayCalibrationFactor();
   Serial.println("The scale will start in 5 seconds...");
   delay(5000);
 }
 
 void SmartCartScale::reCalibrate() {
-  if (currentState == VALID) {
-    calibrationFactor = LoadCells.getNewCalibration(currentUnfluctuatedWeight);
-    Serial.println("New calibrationFactor: " + calibrationFactor);
-  }
+  // if (currentState == VALID) {
+  //   calibrationFactor = LoadCells.getNewCalibration(currentUnfluctuatedWeight);
+  //   displayCalibrationFactor();
+  // }
+  Serial.println("RECALIBRATE");
 }
 
-void SmartCartScale::setTimedTasks() {
-  TimedTask<SmartCartScale> temp1(5000, this); //or auto temp2 = new TimedTask<SmartCartScale>(500);
-  TimedTask<SmartCartScale> temp2 = TimedTask<SmartCartScale>(500, this);
-  timedCalibration = &temp1;
-  timedWeightUpdate = &temp2;
-  (*timedCalibration).addTask(&SmartCartScale::reCalibrate); //or (*timedCalibration).addTask();
-  (*timedWeightUpdate).addTask(&SmartCartScale::updateCurrentWeight); //https://stackoverflow.com/questions/67150355/how-do-i-dereference-a-pointer-to-an-object-in-c
+void SmartCartScale::displayCalibrationFactor() {
+  Serial.println("New calibrationFactor: " + String(this->calibrationFactor));
 }
 
 void SmartCartScale::update() {
-  timedCalibration->invoke();
-  timedWeightUpdate->invoke();
+  delay(2000);
+  LoadCells.update();
+  timedWeightUpdate.invoke();
+  timedCalibration.invoke();
 }

@@ -33,7 +33,7 @@ TimedTask<T>::TimedTask(uint16_t executionRateMillis, T *instance) {
 template <typename T>
 void TimedTask<T>::invoke() {
     if (this->canExecute()) {
-        for (void (T::*task)() : tasks) (instance->*task)(); //https://stackoverflow.com/questions/10901959/function-pointers-in-c-error-must-use-or-to-call-pointer-to-memb
+        for (void (T::*task)() : tasks) (instance->*task)();//https://stackoverflow.com/questions/10901959/function-pointers-in-c-error-must-use-or-to-call-pointer-to-memb
         this->timeSnapshot = millis();
     }
 };
