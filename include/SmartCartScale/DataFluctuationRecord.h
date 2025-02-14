@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <Arduino.h>
 
 class DataFluctuationRecord {
   public:
@@ -10,5 +11,5 @@ class DataFluctuationRecord {
     DataFluctuationRecord(float originalValue);
     void update(float newValue);
     void reset(float newValue);
-    std::string getFluctuationResults();
+    String getFluctuationResults();
 };

@@ -4,11 +4,11 @@
 #include <HX711/HX711_ADC.h>
 #include <stdint.h>
 #include <Input.h>
+#include <SmartCartScale/TimedTask.h>
 
 SmartCartScale::SmartCartScale(uint8_t dataPin = 23, uint8_t serialClockPin = 19) : LoadCells(dataPin, serialClockPin), record(0) {
-  // *timedWeightUpdate.addTask(updateCurrentWeight);
-  // *timedCalibration.addTask(reCalibrate);
-};
+  this->setTimedTasks();
+}
 
 void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNegative = false, uint16_t startingDelay = 5000, uint8_t gain = 128, signed long calibrationFactor = 0) {
   Serial.println("SmartCart scale system starting...");
@@ -19,19 +19,20 @@ void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNega
   else {
     LoadCells.tare();
     LoadCells.setCalFactor(calibrationFactor);
-  }
-};
-  
-void SmartCartScale::updateCurrentWeight() {
-  currentWeight = LoadCells.getData();
-  Serial.println("Weight: " + String(currentWeight));
+  };
 }
   
+void SmartCartScale::updateCurrentWeight() { //no error
+  currentWeight = LoadCells.getData();
+  Serial.println("Weight: " + String(currentWeight) + " || " + record.getFluctuationResults() + " || ");
+}
+
 void SmartCartScale::updateScaleStatus() {
   segmentedExpectedWeight = ((expectedWeight * validationMargin) + fixedValidationMargin);
   if ( (currentWeight > (expectedWeight - segmentedExpectedWeight)) || (currentWeight < (expectedWeight + segmentedExpectedWeight))) {
     currentState = VALID;
     currentUnfluctuatedWeight = expectedWeight;
+    record.reset(expectedWeight);
   }
   else currentState = AWAITING;
 }
@@ -47,6 +48,15 @@ void SmartCartScale::calibrate() {
   delay(5000);
 }
 
-// void reCalibrate() {
-  
-// }
+void SmartCartScale::reCalibrate() {
+  Serial.println("CAL");
+}
+
+void SmartCartScale::setTimedTasks() {
+  TimedTask<SmartCartScale> temp1(5000); //or auto temp2 = new TimedTask<SmartCartScale>(500);
+  TimedTask<SmartCartScale> temp2 = TimedTask<SmartCartScale>(500);
+  timedCalibration = &temp1;
+  timedWeightUpdate = &temp2;
+  (*timedCalibration).addTask(&SmartCartScale::reCalibrate); //or (*timedCalibration).addTask();
+  (*timedWeightUpdate).addTask(&SmartCartScale::updateCurrentWeight); //https://stackoverflow.com/questions/67150355/how-do-i-dereference-a-pointer-to-an-object-in-c
+}

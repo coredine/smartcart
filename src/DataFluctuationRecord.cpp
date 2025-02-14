@@ -1,6 +1,6 @@
 #include <SmartCartScale/DataFluctuationRecord.h>
 #include <iostream>
-using namespace std;
+#include <Arduino.h>
 
 DataFluctuationRecord::DataFluctuationRecord(float originalValue) {
   reset(originalValue);
@@ -20,6 +20,6 @@ void DataFluctuationRecord::reset(float newValue) {
   highestValue = newValue;
 }
 
-std::string DataFluctuationRecord::getFluctuationResults() {
-    return "[ " + to_string(lowestValue) + " | " + to_string(originalValue) + " | " + to_string(highestValue) + " ]";
+String DataFluctuationRecord::getFluctuationResults() {
+    return "[ " + String(lowestValue) + " | " + String(originalValue) + " | " + String(highestValue) + " ]";
 }
