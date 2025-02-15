@@ -11,6 +11,8 @@ const String password = "********";
 WiFiClient wifi;
 WebServer server(80);
 
+bool setupCompleted = false;
+
 void initCart(void);
 void notFound(void);
 
@@ -51,7 +53,7 @@ void cartInitSetup(void)
 
   server.serveStatic("/setup.html", SD, "/public/setup.html");
   
-  server.on("/setup", HTTP_GET, [] {  
+  server.on("/setup", HTTP_GET, [] {
     server.sendHeader("Location", "/setup.html", true);
     server.send(302, "text/plain", "");
   });
@@ -98,6 +100,11 @@ std::tuple<int, String> requestSystemEntry(String ip, int port, JsonDocument bod
 
 void initCart(void)
 {
+  if(setupCompleted) {
+    server.send(403, "application/json", "Cart already setup.");
+    return;
+  }
+  
   Serial.println("Launching the init process...");
 
   // Connect the ESP32 to the store WiFi.
@@ -148,7 +155,8 @@ void initCart(void)
     file.print(config.as<String>());
     file.flush();
     file.close();
-    // step to save the data, etc in the SD card and to block the setup route.
+
+    setupCompleted = true;
     server.send(201, "application/json", "The cart was successfuly added. The next step is to restart the cart.");
     return;
   }
