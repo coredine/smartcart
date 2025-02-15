@@ -68,8 +68,8 @@ void cartInitLoop(void)
   delay(2);
 }
 
-std::tuple<int, String> requestSystemEntry(String backendUrl, JsonDocument body) {
-  HttpClient http(wifi, backendUrl, 8080);
+std::tuple<int, String> requestSystemEntry(String ip, int port, JsonDocument body) {
+  HttpClient http(wifi, ip, port);
   http.setTimeout(3000);
   http.post("/carts", "application/json", body.as<String>());
   auto responseStatus = http.responseStatusCode();
@@ -94,7 +94,8 @@ void initCart(void)
 
   // Connect the ESP32 to the store WiFi.
   auto storeSsid = server.arg("ssid");
-  auto wiFiStatus = connectToStoreWifi(storeSsid, server.arg("password"));
+  auto storePassword = server.arg("password");
+  auto wiFiStatus = connectToStoreWifi(storeSsid, storePassword);
 
   Serial.println("WiFi status is " + String(wiFiStatus) + ".");
 
@@ -119,7 +120,7 @@ void initCart(void)
   body["serviceTag"] = server.arg("serviceTag");
   body["securityCode"] = server.arg("securityCode");
 
-  auto [responseStatus, responseBody] = requestSystemEntry(server.arg("backendUrl"), body);
+  auto [responseStatus, responseBody] = requestSystemEntry(server.arg("ip"), server.arg("port").toInt(), body);
 
   if (responseStatus == -2)
   {
@@ -129,6 +130,14 @@ void initCart(void)
 
   if (responseStatus == 201)
   {
+    JsonDocument config;
+    config["wifi"]["ssid"] = storeSsid;
+    config["wifi"]["password"] = storePassword;
+    config["backend"]["ip"] = server.arg("ip");
+    config["backend"]["port"] = server.arg("port");
+
+    File file = SD.open("/config.json", FILE_WRITE);
+    file.print(config.as<String>());
     // step to save the data, etc in the SD card and to block the setup route.
     server.send(201, "application/json", "The cart was successfuly added. The next step is to restart the cart.");
     return;
