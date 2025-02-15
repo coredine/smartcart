@@ -6,14 +6,15 @@
 #include <Input.h>
 #include <TimedTask.h>
 
-SmartCartScale::SmartCartScale(uint8_t dataPin = 23, uint8_t serialClockPin = 19, uint16_t calibrationRate = 5000, uint16_t weightUpdateRate = 200): 
+SmartCartScale::SmartCartScale(uint8_t dataPin = 23, uint8_t serialClockPin = 19, uint16_t calibrationRate = 5000, uint16_t weightUpdateRate = 200, bool reCalibrates = true): 
 expectedWeight(0),
 currentUnfluctuatedWeight(900),
 currentWeight(0), 
 calibrationFactor(0),
 validationMargin(0.15),
-fixedValidationMargin(20),
+fixedValidationMargin(50 ),
 segmentedExpectedWeight(0),
+reCalibrates(reCalibrates),
 currentState(VALID),
 LoadCells(dataPin, serialClockPin), 
 record(0),
@@ -39,7 +40,7 @@ void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNega
 void SmartCartScale::updateCurrentWeight() { 
   currentWeight = LoadCells.getData();
   updateScaleStatus();
-  Serial.println("Weight: " + String(currentWeight) + " | " + record.getFluctuationResults() + " | " + currentState);
+  Serial.println("Weight: " + String(currentWeight) + " | " + (currentState ? record.getFluctuationResults() + " | ": "") + currentState + " | " + expectedWeight);  //show result only valid
 }
 
 void SmartCartScale::updateScaleStatus() {
@@ -64,7 +65,8 @@ void SmartCartScale::calibrate() {
 }
 
 void SmartCartScale::reCalibrate() {
-  if (currentState == VALID) {
+  if (currentState == VALID && reCalibrates) {
+    LoadCells.refreshDataSet();
     calibrationFactor = LoadCells.getNewCalibration(currentUnfluctuatedWeight);
     displayCalibrationFactor();
   }

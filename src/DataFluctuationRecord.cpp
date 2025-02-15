@@ -21,5 +21,5 @@ void DataFluctuationRecord::reset(float newValue) {
 }
 
 String DataFluctuationRecord::getFluctuationResults() {
-    return "[ " + String(lowestValue) + " | " + String(originalValue) + " | " + String(highestValue) + " ]";
+    return "[ " + String(lowestValue) + " - " + String(originalValue) + " - " + String(highestValue) + " ]";
 }
