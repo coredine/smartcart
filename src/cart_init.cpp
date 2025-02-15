@@ -68,6 +68,14 @@ void cartInitLoop(void)
   delay(2);
 }
 
+String getServiceTag() {
+  File file = SD.open("/serviceTag.txt", FILE_READ);
+  String serviceTag = file.readString();
+  file.flush();
+  file.close();
+  return serviceTag;
+}
+
 std::tuple<int, String> requestSystemEntry(String ip, int port, JsonDocument body) {
   HttpClient http(wifi, ip, port);
   http.setTimeout(3000);
@@ -117,7 +125,7 @@ void initCart(void)
 
   // Call the server to add the cart in the system.
   JsonDocument body;
-  body["serviceTag"] = server.arg("serviceTag");
+  body["serviceTag"] = getServiceTag();
   body["securityCode"] = server.arg("securityCode");
 
   auto [responseStatus, responseBody] = requestSystemEntry(server.arg("ip"), server.arg("port").toInt(), body);
@@ -138,6 +146,8 @@ void initCart(void)
 
     File file = SD.open("/config.json", FILE_WRITE);
     file.print(config.as<String>());
+    file.flush();
+    file.close();
     // step to save the data, etc in the SD card and to block the setup route.
     server.send(201, "application/json", "The cart was successfuly added. The next step is to restart the cart.");
     return;
