@@ -12,7 +12,7 @@ currentUnfluctuatedWeight(900),
 currentWeight(0), 
 calibrationFactor(0),
 validationMargin(0.15),
-fixedValidationMargin(50 ),
+fixedValidationMargin(125), //300?
 segmentedExpectedWeight(0),
 reCalibrates(reCalibrates),
 currentState(VALID),
@@ -35,12 +35,14 @@ void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNega
     LoadCells.tare();
     LoadCells.setCalFactor(calibrationFactor);
   };
+  Serial.println("The scale will start in 5 seconds...");
+  delay(5000);
 }
   
 void SmartCartScale::updateCurrentWeight() { 
   currentWeight = LoadCells.getData();
   updateScaleStatus();
-  Serial.println("Weight: " + String(currentWeight) + " | " + (currentState ? record.getFluctuationResults() + " | ": "") + currentState + " | " + expectedWeight);  //show result only valid
+  Serial.println("Weight: " + String(currentWeight) + " | " + (currentState ? "true" : "false") + " | " + expectedWeight + (currentState ? " | " + record.getFluctuationResults(): ""));  //show result only valid
 }
 
 void SmartCartScale::updateScaleStatus() {
@@ -60,12 +62,10 @@ void SmartCartScale::calibrate() {
   LoadCells.refreshDataSet();
   calibrationFactor = LoadCells.getNewCalibration(knownsMass); //returns and sets
   displayCalibrationFactor();
-  Serial.println("The scale will start in 5 seconds...");
-  delay(5000);
 }
 
 void SmartCartScale::reCalibrate() {
-  if (currentState == VALID && reCalibrates) {
+  if (currentState == VALID && reCalibrates && currentUnfluctuatedWeight != 0) {
     LoadCells.refreshDataSet();
     calibrationFactor = LoadCells.getNewCalibration(currentUnfluctuatedWeight);
     displayCalibrationFactor();
