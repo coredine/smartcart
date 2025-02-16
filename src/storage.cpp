@@ -55,3 +55,28 @@ void closeStorage(void)
     SD.end();
     storageUp = false;
 }
+
+void saveConfig(String storeSsid, String storePassword, String backendIp, String backendPort)
+{
+    JsonDocument config;
+    config["wifi"]["ssid"] = storeSsid;
+    config["wifi"]["password"] = storePassword;
+    config["backend"]["ip"] = backendIp;
+    config["backend"]["port"] = backendPort;
+
+    File file = SD.open("/config.json", FILE_WRITE);
+    file.print(config.as<String>());
+    file.flush();
+    file.close();
+    config.clear();
+}
+
+JsonDocument readConfig(void)
+{
+    File file = SD.open("/config.json", FILE_READ);
+    JsonDocument config;
+    deserializeJson(config, file.readString());
+    file.flush();
+    file.close();
+    return config;
+}

@@ -40,6 +40,8 @@ void cartInitSetup(void)
     while(1);
   }
 
+  Serial.println(readConfig().as<String>());
+
   String apPassword = randomPassword();
   Serial.println("The Access Point password is "+apPassword);
   serviceTag = getServiceTag();
@@ -143,17 +145,7 @@ void initCart(void)
 
   if (responseStatus == 201)
   {
-    JsonDocument config;
-    config["wifi"]["ssid"] = storeSsid;
-    config["wifi"]["password"] = storePassword;
-    config["backend"]["ip"] = server.arg("ip");
-    config["backend"]["port"] = server.arg("port");
-
-    File file = SD.open("/config.json", FILE_WRITE);
-    file.print(config.as<String>());
-    file.flush();
-    file.close();
-
+    saveConfig(storeSsid, storePassword, server.arg("ip"), server.arg("port"));
     setupCompleted = true;
     server.send(201, "application/json", "The cart was successfuly added. The next step is to restart the cart.");
     return;
