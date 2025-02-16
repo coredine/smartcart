@@ -17,10 +17,11 @@ ShoppingSimulation sim(&scale, 35000, &simPoints);
 void setup() {
   Serial.begin(57600);
   delay(8000);
-  scale.setUpHX711(false, false, 5000, 128, -0.80);
+  scale.setUpHX711(false, false, 5000, 128);
 }
 
 void loop() {
   sim.update();
   scale.update();
+  scale.interact();
 }

@@ -6,7 +6,7 @@
 #include <Input.h>
 #include <TimedTask.h>
 
-SmartCartScale::SmartCartScale(uint8_t dataPin = 23, uint8_t serialClockPin = 19, uint16_t calibrationRate = 5000, uint16_t weightUpdateRate = 200, bool reCalibrates = true): 
+SmartCartScale::SmartCartScale(uint8_t dataPin, uint8_t serialClockPin, uint16_t calibrationRate, uint16_t weightUpdateRate, bool reCalibrates): 
 expectedWeight(0),
 currentUnfluctuatedWeight(900),
 currentWeight(0), 
@@ -16,6 +16,7 @@ fixedValidationMargin(125), //300?
 segmentedExpectedWeight(0),
 reCalibrates(reCalibrates),
 currentState(VALID),
+lastState(VALID),
 powerState(1),
 LoadCells(dataPin, serialClockPin), 
 record(0),
@@ -26,7 +27,7 @@ timedWeightUpdate(weightUpdateRate, this)
   timedWeightUpdate.addTask(&SmartCartScale::updateCurrentWeight); //https://stackoverflow.com/questions/67150355/how-do-i-dereference-a-pointer-to-an-object-in-c
 }
 
-void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNegative = false, uint16_t startingDelay = 5000, uint8_t gain = 128, float calibrationFactor = 50) {
+void SmartCartScale::setUpHX711(bool calibrateOnStartup, bool reverseNegative, uint16_t startingDelay, uint8_t gain, float calibrationFactor) {
   Serial.println("SmartCart scale system starting...");
   LoadCells.begin(gain);
   if (reverseNegative) LoadCells.setReverseOutput();
@@ -36,14 +37,14 @@ void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNega
     LoadCells.tare();
     LoadCells.setCalFactor(calibrationFactor);
   };
-  Serial.println("The scale will start in 5 seconds...");
+  Serial.println("System will start in 5 seconds...");
   delay(5000);
 }
   
 void SmartCartScale::updateCurrentWeight() { 
   currentWeight = LoadCells.getData();
   updateScaleStatus();
-  Serial.println("Weight: " + String(currentWeight) + " | " + (currentState ? "VALID" : "INVALID") + " | " + expectedWeight + (currentState ? " | " + record.getFluctuationResults(): ""));  //show result only valid
+  Serial.println("Weight: " + String(currentWeight) + " | " + (currentState ? "VALID" : "AWAITING") + " | " + expectedWeight + (currentState ? " | " + record.getFluctuationResults(): ""));  //show result only valid
 }
 
 void SmartCartScale::updateScaleStatus() {
@@ -51,13 +52,13 @@ void SmartCartScale::updateScaleStatus() {
   if ((currentWeight > (expectedWeight - segmentedExpectedWeight)) && (currentWeight < (expectedWeight + segmentedExpectedWeight))) {
     currentState = VALID;
     currentUnfluctuatedWeight = expectedWeight;
-    record.reset(expectedWeight);
-  }
-  else currentState = AWAITING;
+    if (lastState == AWAITING) record.reset(expectedWeight);
+  } else currentState = AWAITING;
+  lastState = currentState;
 }
 
 void SmartCartScale::calibrate() {
-  blockUntil('r');
+  blockUntil('t');
   LoadCells.tare();
   Serial.println("Value of known mass: ");
   float knownsMass = readFloatBlock(); //2lb/907grams microphone, 200g/0.44lb phone
@@ -67,14 +68,16 @@ void SmartCartScale::calibrate() {
 }
 
 void SmartCartScale::reCalibrate() {
-  if (currentState == VALID && reCalibrates && currentUnfluctuatedWeight != 0) { 
+  if (currentState == VALID && reCalibrates && currentUnfluctuatedWeight != 0) {
+    restart();
+    LoadCells.refreshDataSet();  //needed?
     calibrationFactor = LoadCells.getNewCalibration(currentUnfluctuatedWeight);
     displayCalibrationFactor();
   }
 }
 
 void SmartCartScale::displayCalibrationFactor() {
-  Serial.println("New calibrationFactor(for expected weight of: " + String(this->expectedWeight) + ") ->" + String(this->calibrationFactor));
+  Serial.println("New calibrationFactor(for expected weight of: " + String(this->expectedWeight) + "): " + String(this->calibrationFactor));
 }
 
 void SmartCartScale::update() {
@@ -87,11 +90,9 @@ void SmartCartScale::update() {
 }
 
 void SmartCartScale::blockUntil(char inp) {
-  // bool resume = false;
-  // char in;
-  // while (resume == false) {
-
-  // }
+  Serial.println("Input: " + String(inp) + " to keep going...");
+  bool resume = false;
+  while (resume == false) if (Serial.available()) Serial.read() == inp ? resume = true : true;
 }
 
 void SmartCartScale::turnOn() {
@@ -117,5 +118,22 @@ void SmartCartScale::restart(uint16_t offDelay) {
 void SmartCartScale::interact() {
   if (Serial.available()) {
     char in = Serial.read();
+    switch (in)
+    {
+    case 't':
+      Serial.println("tare");
+      break;
+
+    case 'o':
+      Serial.println("tare");
+      break;
+
+    case 'n':
+      Serial.println("tare");
+      break;
+
+    default:
+      break;
+    }
   }
 }
