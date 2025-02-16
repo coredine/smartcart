@@ -5,16 +5,26 @@
 #include <ArduinoJson.h>
 #include <SD.h>
 
-const String ssid = "ESP32";
-const String password = "********";
-
 WiFiClient wifi;
 WebServer server(80);
 
 bool setupCompleted = false;
+String serviceTag;
 
 void initCart(void);
 void notFound(void);
+String getServiceTag(void);
+
+String randomPassword(void) {
+  String pass = "";
+  
+  for(int i = 0; i < 10; i++) {
+    char character = random(65, 90);
+    pass = pass + character;
+  }
+  
+  return pass;
+}
 
 wl_status_t connectToStoreWifi(String storeSsid, String storePassword)
 {
@@ -25,19 +35,6 @@ wl_status_t connectToStoreWifi(String storeSsid, String storePassword)
 
 void cartInitSetup(void)
 {
-  WiFi.mode(WIFI_AP_STA);
-  Serial.println("Creating \"" + ssid + "\" access point.");
-
-  if (!WiFi.softAP(ssid, password))
-  {
-    Serial.println("Soft AP creation failed.");
-    while (1)
-      ;
-  }
-
-  Serial.println("The ip Address is : ");
-  Serial.println(WiFi.softAPIP());
-
   if (!SD.begin())
   {
     Serial.println("Enable to mount SD card.");
@@ -50,6 +47,23 @@ void cartInitSetup(void)
     Serial.println("No SD card found.");
     return;
   }
+
+  String apPassword = randomPassword();
+  Serial.println("The Access Point password is "+apPassword);
+  serviceTag = getServiceTag();
+
+  WiFi.mode(WIFI_AP_STA);
+  Serial.println("Creating \"" + serviceTag + "\" access point.");
+
+  if (!WiFi.softAP(serviceTag, apPassword))
+  {
+    Serial.println("Soft AP creation failed.");
+    while (1)
+      ;
+  }
+
+  Serial.println("The ip Address is : ");
+  Serial.println(WiFi.softAPIP());
 
   server.serveStatic("/setup.html", SD, "/public/setup.html");
   
@@ -132,7 +146,7 @@ void initCart(void)
 
   // Call the server to add the cart in the system.
   JsonDocument body;
-  body["serviceTag"] = getServiceTag();
+  body["serviceTag"] = serviceTag;
   body["securityCode"] = server.arg("securityCode");
 
   auto [responseStatus, responseBody] = requestSystemEntry(server.arg("ip"), server.arg("port").toInt(), body);
