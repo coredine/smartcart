@@ -4,6 +4,7 @@
 #include <ArduinoHttpClient.h>
 #include <ArduinoJson.h>
 #include <SD.h>
+#include "storage.h"
 
 WiFiClient wifi;
 WebServer server(80);
@@ -13,7 +14,6 @@ String serviceTag;
 
 void initCart(void);
 void notFound(void);
-String getServiceTag(void);
 
 String randomPassword(void) {
   String pass = "";
@@ -35,17 +35,9 @@ wl_status_t connectToStoreWifi(String storeSsid, String storePassword)
 
 void cartInitSetup(void)
 {
-  if (!SD.begin())
-  {
-    Serial.println("Enable to mount SD card.");
-    return;
-  }
-
-  auto cardType = SD.cardType();
-  if (cardType == CARD_NONE)
-  {
-    Serial.println("No SD card found.");
-    return;
+  if(!initStorage()) {
+    // Need to show error and block the program.
+    while(1);
   }
 
   String apPassword = randomPassword();
@@ -82,14 +74,6 @@ void cartInitLoop(void)
 {
   server.handleClient();
   delay(2);
-}
-
-String getServiceTag() {
-  File file = SD.open("/serviceTag.txt", FILE_READ);
-  String serviceTag = file.readString();
-  file.flush();
-  file.close();
-  return serviceTag;
 }
 
 std::tuple<int, String> requestSystemEntry(String ip, int port, JsonDocument body) {
