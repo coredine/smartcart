@@ -34,4 +34,9 @@ class SmartCartScale {
         void reCalibrate();
         void displayCalibrationFactor();
         void update();
+
+        void turnOn();
+        void turnOff();
+        void restart(uint16_t onDelay);
+        void interact();
 };
