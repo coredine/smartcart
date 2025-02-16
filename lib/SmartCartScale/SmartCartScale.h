@@ -21,6 +21,7 @@ class SmartCartScale {
         float segmentedExpectedWeight;
         bool reCalibrates;
         SCALE_STATE currentState = VALID; 
+        bool powerState;
         HX711_ADC LoadCells; 
         DataFluctuationRecord record; 
         TimedTask<SmartCartScale> timedCalibration;
@@ -35,8 +36,9 @@ class SmartCartScale {
         void displayCalibrationFactor();
         void update();
 
-        void turnOn();
-        void turnOff();
-        void restart(uint16_t onDelay);
-        void interact();
+        void blockUntil(char inp);
+        void turnOn(); 
+        void turnOff(); 
+        void restart(uint16_t offDelay); 
+        void interact(); 
 };

@@ -16,6 +16,7 @@ fixedValidationMargin(125), //300?
 segmentedExpectedWeight(0),
 reCalibrates(reCalibrates),
 currentState(VALID),
+powerState(1),
 LoadCells(dataPin, serialClockPin), 
 record(0),
 timedCalibration(calibrationRate, this), //auto temp2 = new TimedTask<SmartCartScale>(500);/TimedTask<SmartCartScale> temp1(5000, this);/TimedTask<SmartCartScale> temp2 = TimedTask<SmartCartScale>(500, this);
@@ -42,7 +43,7 @@ void SmartCartScale::setUpHX711(bool calibrateOnStartup = true, bool reverseNega
 void SmartCartScale::updateCurrentWeight() { 
   currentWeight = LoadCells.getData();
   updateScaleStatus();
-  Serial.println("Weight: " + String(currentWeight) + " | " + (currentState ? "true" : "false") + " | " + expectedWeight + (currentState ? " | " + record.getFluctuationResults(): ""));  //show result only valid
+  Serial.println("Weight: " + String(currentWeight) + " | " + (currentState ? "VALID" : "INVALID") + " | " + expectedWeight + (currentState ? " | " + record.getFluctuationResults(): ""));  //show result only valid
 }
 
 void SmartCartScale::updateScaleStatus() {
@@ -56,6 +57,7 @@ void SmartCartScale::updateScaleStatus() {
 }
 
 void SmartCartScale::calibrate() {
+  blockUntil('r');
   LoadCells.tare();
   Serial.println("Value of known mass: ");
   float knownsMass = readFloatBlock(); //2lb/907grams microphone, 200g/0.44lb phone
@@ -65,8 +67,7 @@ void SmartCartScale::calibrate() {
 }
 
 void SmartCartScale::reCalibrate() {
-  if (currentState == VALID && reCalibrates && currentUnfluctuatedWeight != 0) {
-    LoadCells.refreshDataSet();
+  if (currentState == VALID && reCalibrates && currentUnfluctuatedWeight != 0) { 
     calibrationFactor = LoadCells.getNewCalibration(currentUnfluctuatedWeight);
     displayCalibrationFactor();
   }
@@ -77,8 +78,44 @@ void SmartCartScale::displayCalibrationFactor() {
 }
 
 void SmartCartScale::update() {
-  LoadCells.update();
-  record.update(currentWeight);
-  timedWeightUpdate.invoke();
-  timedCalibration.invoke();
+  if (powerState) {
+    LoadCells.update();
+    record.update(currentWeight);
+    timedWeightUpdate.invoke();
+    timedCalibration.invoke();
+  }
+}
+
+void SmartCartScale::blockUntil(char inp) {
+  // bool resume = false;
+  // char in;
+  // while (resume == false) {
+
+  // }
+}
+
+void SmartCartScale::turnOn() {
+  if (powerState == 0) {
+    powerState = 1;
+    LoadCells.powerUp();
+  }
+}
+
+void SmartCartScale::turnOff() {
+  if (powerState) {
+    powerState = 0;
+    LoadCells.powerDown();
+  }
+}
+
+void SmartCartScale::restart(uint16_t offDelay) {
+  turnOff();
+  delay(offDelay);
+  turnOn();
+}
+
+void SmartCartScale::interact() {
+  if (Serial.available()) {
+    char in = Serial.read();
+  }
 }
