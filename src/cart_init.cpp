@@ -5,6 +5,7 @@
 #include <ArduinoJson.h>
 #include <SD.h>
 #include "storage.h"
+#include <exceptions.h>
 
 WiFiClient wifi;
 WebServer server(80);
@@ -35,8 +36,12 @@ wl_status_t connectToStoreWifi(String storeSsid, String storePassword)
 
 void cartInitSetup(void)
 {
-  if(!initStorage()) {
-    // Need to show error and block the program.
+  try {
+    initStorage();
+  } catch(smart_cart_error &e) {
+    Serial.print("Exception is " + String(e.what()));
+    // Need to print the error on the screen and to wait until the user does an action
+    // the wainting loop should be in a universal function.
     while(1);
   }
 

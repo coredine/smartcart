@@ -8,7 +8,7 @@
 #include <SD.h>
 
 String getServiceTag(void);
-bool initStorage(void);
+void initStorage(void);
 void closeStorage(void);
 void saveConfig(String storeSsid, String storePassword, String backendIp, String backendPort);
 JsonDocument readConfig(void);

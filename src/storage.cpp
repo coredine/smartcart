@@ -1,32 +1,32 @@
 #include "storage.h"
+#include "exceptions.h"
 #include <SD.h>
 
 static String serviceTag;
 static bool storageUp = false;
 
-bool initStorage(void)
+void initStorage(void)
 {
     if (storageUp)
     {
         Serial.println("Storage already initialized.");
-        return true;
+        return;
     }
 
     if (!SD.begin())
     {
         Serial.println("Enable to mount SD card.");
-        return false;
-
+        throw smart_cart_error("Enable to mount SD card.", "E-0001");
     }
 
     if (SD.cardType() == CARD_NONE)
     {
         Serial.println("No SD card found.");
-        return false;
+        throw smart_cart_error("No SD card found.", "E-0002");
     }
 
     storageUp = true;
-    return true;
+    return;
 }
 
 String getServiceTag(void)
