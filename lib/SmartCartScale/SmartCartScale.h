@@ -22,24 +22,27 @@ class SmartCartScale {
         bool reCalibrates;
         SCALE_STATE currentState; 
         SCALE_STATE lastState;
+        bool dataReady;
         bool powerState;
+        uint16_t resartDelay;
         HX711_ADC LoadCells; 
         DataFluctuationRecord record; 
         TimedTask<SmartCartScale> timedCalibration;
         TimedTask<SmartCartScale> timedWeightUpdate;
+        TimedTask<SmartCartScale> timedRestart;
 
-        SmartCartScale(uint8_t dataPin = 23, uint8_t serialClockPin = 19, uint16_t calibrationRate = 15000, uint16_t weightUpdateRate = 300, bool reCalibrates = false);
-        void setUpHX711(bool calibrateOnStartup = true, bool reverseNegative = false, uint16_t startingDelay = 5000, uint8_t gain = 128, float calibrationFactor = -0.83);
+        SmartCartScale(uint8_t dataPin = 23, uint8_t serialClockPin = 19, uint16_t calibrationRate = 12000, uint16_t weightUpdateRate = 300, uint16_t restartRate = 15000, bool reCalibrates = false);
+        void setUpHX711(bool calibrateOnStartup = true, uint16_t startingDelay = 5000, uint8_t gain = 128, float calibrationFactor = -0.83);
         void updateCurrentWeight();
         void updateScaleStatus();
+        void tare();
         void calibrate();
         void reCalibrate();
         void displayCalibrationFactor();
         void update();
 
-        void blockUntil(char inp);
         void turnOn(); 
         void turnOff(); 
-        void restart(uint16_t offDelay = 5000); 
+        void restart(); 
         void interact(); 
 };
