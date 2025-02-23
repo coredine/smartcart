@@ -2,7 +2,8 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include "cart_init.h"
-#include <bluetooth_manager.h>
+#include <storage.h>
+#include <exceptions.h>
 
 // temporary boolean for activating cart setup
 #define IS_CART_SETUP true
@@ -14,18 +15,22 @@ void setup(void)
   Serial.begin(9600);
   Serial.println("The project version is " + PROJECT_VERSION + ".");
 
-  initBluetooth();
+  try {
+    initStorage();
+  } catch(smart_cart_error &e) {
+    Serial.print(String(e.what()));
+    while(1);
+  }
 
-  // if (IS_CART_SETUP)
-  // {
-  //   cartInitSetup();
-  // }
+  auto config = readConfig();
+
+  if(config.isNull()) {
+    Serial.println("Config empty!");
+    cartInitSetup();
+  }
 }
 
 void loop(void)
 {
-  // if (IS_CART_SETUP)
-  // {
-  //   cartInitLoop();
-  // }
+
 }
