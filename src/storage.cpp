@@ -1,9 +1,10 @@
 #include "storage.h"
 #include "exceptions.h"
-#include <SD.h>
+#include <LittleFS.h>
 
 static String serviceTag;
 static bool storageUp = false;
+static const char *configPath = "/config.json";
 
 void initStorage(void)
 {
@@ -13,20 +14,39 @@ void initStorage(void)
         return;
     }
 
-    if (!SD.begin())
+    SPI.begin(18, 19, 23, 5);
+    SPI.setDataMode(SPI_MODE0);
+    if (!LittleFS.begin(true))
     {
-        Serial.println("Enable to mount SD card.");
-        throw smart_cart_error("Enable to mount SD card.", "E-0001");
-    }
-
-    if (SD.cardType() == CARD_NONE)
-    {
-        Serial.println("No SD card found.");
-        throw smart_cart_error("No SD card found.", "E-0002");
+        Serial.println("Enable to mount LittleFS.");
+        throw smart_cart_error("Enable to mount LittleFS.", "E-0001");
     }
 
     storageUp = true;
     return;
+}
+
+String generateServiceTag(void)
+{
+    String tag;
+    char character;
+
+    for (int i = 0; i < 7; i++)
+    {
+
+        if (random(0, 2) == 1)
+        {
+            character = random(65, 90);
+        }
+        else
+        {
+            character = random(48, 57);
+        }
+
+        tag = tag + character;
+    }
+
+    return tag;
 }
 
 String getServiceTag(void)
@@ -37,8 +57,18 @@ String getServiceTag(void)
         return serviceTag;
     }
 
-    File file = SD.open("/serviceTag.txt", FILE_READ);
+    File file = LittleFS.open("/serviceTag.txt", FILE_READ);
     serviceTag = file.readString();
+
+    if (serviceTag.isEmpty())
+    {
+        serviceTag = generateServiceTag();
+        File writeFile = LittleFS.open("/serviceTag.txt", FILE_WRITE);
+        writeFile.print(serviceTag);
+        writeFile.flush();
+        writeFile.close();
+    }
+
     file.flush();
     file.close();
     return serviceTag;
@@ -52,7 +82,7 @@ void closeStorage(void)
         return;
     }
 
-    SD.end();
+    LittleFS.end();
     storageUp = false;
 }
 
@@ -64,7 +94,7 @@ void saveConfig(String storeSsid, String storePassword, String backendIp, String
     config["backend"]["ip"] = backendIp;
     config["backend"]["port"] = backendPort;
 
-    File file = SD.open("/config.json", FILE_WRITE);
+    File file = LittleFS.open(configPath, FILE_WRITE);
     file.print(config.as<String>());
     file.flush();
     file.close();
@@ -73,10 +103,16 @@ void saveConfig(String storeSsid, String storePassword, String backendIp, String
 
 JsonDocument readConfig(void)
 {
-    File file = SD.open("/config.json", FILE_READ);
+    if (!LittleFS.exists(configPath))
+    {
+        return JsonDocument();
+    }
+
     JsonDocument config;
+    File file = LittleFS.open(configPath, FILE_READ);
     deserializeJson(config, file.readString());
     file.flush();
     file.close();
+
     return config;
 }

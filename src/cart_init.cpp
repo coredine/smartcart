@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
-#include <ArduinoHttpClient.h>
+#include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <SD.h>
+#include <LittleFS.h>
 #include "storage.h"
 #include <exceptions.h>
 
@@ -45,8 +45,6 @@ void cartInitSetup(void)
     while(1);
   }
 
-  Serial.println(readConfig().as<String>());
-
   String apPassword = randomPassword();
   Serial.println("The Access Point password is "+apPassword);
   serviceTag = getServiceTag();
@@ -64,7 +62,7 @@ void cartInitSetup(void)
   Serial.println("The ip Address is : ");
   Serial.println(WiFi.softAPIP());
 
-  server.serveStatic("/setup.html", SD, "/public/setup.html");
+  server.serveStatic("/setup.html", LittleFS, "/public/setup.html");
   
   server.on("/setup", HTTP_GET, [] {
     server.sendHeader("Location", "/setup.html", true);
@@ -75,30 +73,31 @@ void cartInitSetup(void)
   server.onNotFound(notFound);
 
   server.begin();
-}
 
-void cartInitLoop(void)
-{
-  server.handleClient();
-  delay(2);
+  while (!setupCompleted)
+  {
+    server.handleClient();
+    delay(2);
+  }  
 }
 
 std::tuple<int, String> requestSystemEntry(String ip, int port, JsonDocument body) {
-  HttpClient http(wifi, ip, port);
+  
+  HTTPClient http;
+  http.begin(ip, port, "/carts");
+  http.addHeader("Content-Type", "application/json");
   http.setTimeout(3000);
-  http.post("/carts", "application/json", body.as<String>());
-  auto responseStatus = http.responseStatusCode();
+  auto responseStatus = http.POST(body.as<String>());
   
   Serial.println("Status ="+String(responseStatus));
   String responseBody = "";
 
-  if(responseStatus != -2) {
-    responseBody = http.responseBody();
+  if(responseStatus != -1) {
+    responseBody = http.getString();
     Serial.println("ResponseBody ="+responseBody);
   }
   
-  http.stop();
-  http.flush();
+  http.end();
   body.clear();
   return {responseStatus, responseBody};
 }
@@ -142,7 +141,7 @@ void initCart(void)
 
   auto [responseStatus, responseBody] = requestSystemEntry(server.arg("ip"), server.arg("port").toInt(), body);
 
-  if (responseStatus == -2)
+  if (responseStatus == -1)
   {
     server.send(408, "application/json", "The SmartCart is enable to join the server. Verify that you have specify the right url or that the server is on the \"" + storeSsid + "\" network.");
     return;

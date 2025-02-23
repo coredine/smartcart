@@ -4,6 +4,5 @@
 #define CART_INIT_H
 
 void cartInitSetup(void);
-void cartInitLoop(void);
 
 #endif /* CART_INIT_H */
