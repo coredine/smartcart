@@ -4,6 +4,7 @@
 #include "cart_init.h"
 #include <storage.h>
 #include <exceptions.h>
+#include <network.h>
 
 // temporary boolean for activating cart setup
 #define IS_CART_SETUP true
@@ -28,6 +29,8 @@ void setup(void)
     Serial.println("Config empty!");
     cartInitSetup();
   }
+
+  connectToStoreWifi();
 }
 
 void loop(void)

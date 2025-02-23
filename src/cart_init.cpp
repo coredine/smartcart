@@ -5,7 +5,8 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include "storage.h"
-#include <exceptions.h>
+#include "exceptions.h"
+#include "network.h"
 
 WiFiClient wifi;
 WebServer server(80);
@@ -16,37 +17,36 @@ String serviceTag;
 void initCart(void);
 void notFound(void);
 
-String randomPassword(void) {
+String randomPassword(void)
+{
   String pass = "";
-  
-  for(int i = 0; i < 10; i++) {
+
+  for (int i = 0; i < 10; i++)
+  {
     char character = random(65, 90);
     pass = pass + character;
   }
-  
-  return pass;
-}
 
-wl_status_t connectToStoreWifi(String storeSsid, String storePassword)
-{
-  Serial.println("Trying to connect to " + storeSsid + ".");
-  WiFi.begin(storeSsid, storePassword);
-  return (wl_status_t)WiFi.waitForConnectResult();
+  return pass;
 }
 
 void cartInitSetup(void)
 {
-  try {
+  try
+  {
     initStorage();
-  } catch(smart_cart_error &e) {
+  }
+  catch (smart_cart_error &e)
+  {
     Serial.print("Exception is " + String(e.what()));
     // Need to print the error on the screen and to wait until the user does an action
     // the wainting loop should be in a universal function.
-    while(1);
+    while (1)
+      ;
   }
 
   String apPassword = randomPassword();
-  Serial.println("The Access Point password is "+apPassword);
+  Serial.println("The Access Point password is " + apPassword);
   serviceTag = getServiceTag();
 
   WiFi.mode(WIFI_AP_STA);
@@ -63,11 +63,11 @@ void cartInitSetup(void)
   Serial.println(WiFi.softAPIP());
 
   server.serveStatic("/setup.html", LittleFS, "/public/setup.html");
-  
-  server.on("/setup", HTTP_GET, [] {
+
+  server.on("/setup", HTTP_GET, []
+            {
     server.sendHeader("Location", "/setup.html", true);
-    server.send(302, "text/plain", "");
-  });
+    server.send(302, "text/plain", ""); });
 
   server.on("/init", HTTP_POST, initCart);
   server.onNotFound(notFound);
@@ -78,25 +78,27 @@ void cartInitSetup(void)
   {
     server.handleClient();
     delay(2);
-  }  
+  }
 }
 
-std::tuple<int, String> requestSystemEntry(String ip, int port, JsonDocument body) {
-  
+std::tuple<int, String> requestSystemEntry(String ip, int port, JsonDocument body)
+{
+
   HTTPClient http;
   http.begin(ip, port, "/carts");
   http.addHeader("Content-Type", "application/json");
   http.setTimeout(3000);
   auto responseStatus = http.POST(body.as<String>());
-  
-  Serial.println("Status ="+String(responseStatus));
+
+  Serial.println("Status =" + String(responseStatus));
   String responseBody = "";
 
-  if(responseStatus != -1) {
+  if (responseStatus != -1)
+  {
     responseBody = http.getString();
-    Serial.println("ResponseBody ="+responseBody);
+    Serial.println("ResponseBody =" + responseBody);
   }
-  
+
   http.end();
   body.clear();
   return {responseStatus, responseBody};
@@ -104,19 +106,18 @@ std::tuple<int, String> requestSystemEntry(String ip, int port, JsonDocument bod
 
 void initCart(void)
 {
-  if(setupCompleted) {
+  if (setupCompleted)
+  {
     server.send(403, "application/json", "Cart already setup.");
     return;
   }
-  
+
   Serial.println("Launching the init process...");
 
   // Connect the ESP32 to the store WiFi.
   auto storeSsid = server.arg("ssid");
   auto storePassword = server.arg("password");
   auto wiFiStatus = connectToStoreWifi(storeSsid, storePassword);
-
-  Serial.println("WiFi status is " + String(wiFiStatus) + ".");
 
   switch (wiFiStatus)
   {

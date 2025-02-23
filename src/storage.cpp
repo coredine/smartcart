@@ -14,8 +14,6 @@ void initStorage(void)
         return;
     }
 
-    SPI.begin(18, 19, 23, 5);
-    SPI.setDataMode(SPI_MODE0);
     if (!LittleFS.begin(true))
     {
         Serial.println("Enable to mount LittleFS.");

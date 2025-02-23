@@ -5,7 +5,6 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <SD.h>
 
 String getServiceTag(void);
 void initStorage(void);
