@@ -4,6 +4,7 @@
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
+#include <HTTPClient.h>
 
 static BLEServer *server;
 static BLEService *cartService;
@@ -13,6 +14,9 @@ static BLECharacteristic *chSku;
 static BLECharacteristic *chAppState;
 static BLECharacteristic *chOrder;
 static BLECharacteristic *chPaymentInfos;
+static JsonDocument config;
+static String backendIp;
+static int backendPort;
 
 class ServerCallbacks : public BLEServerCallbacks {
 	virtual void onConnect(BLEServer* pServer) {
@@ -27,24 +31,31 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
 {
     void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
     {
-        Serial.print("Big data: ");
-        Serial.println(pCharacteristic->getValue().c_str());
+        String sku = pCharacteristic->getValue().c_str();
+        Serial.print("Sku: "+sku);
 
-        // Need to get the item by the SKU in the backend and send it.
-
-        chJsonItem->setValue("{\"id\" : \"SKU-00001\"}");
+        HTTPClient http;
+        http.begin(backendIp, backendPort, "/products/"+sku);
+        http.setTimeout(3000);
+        
+        auto responseCode = http.GET();
+        chJsonItem->setValue(responseCode != 200 ? String(responseCode).c_str() : http.getString().c_str());
         chJsonItem->indicate();
     }
 };
 
 void initBluetooth()
 {
-    BLEDevice::init("ESP32");
+    config = readConfig();
+    backendIp = config["backend"]["ip"].as<String>();
+    backendPort = config["backend"]["port"].as<int>();
+
+    BLEDevice::init(getServiceTag().c_str());
     server = BLEDevice::createServer();
     server->setCallbacks(new ServerCallbacks());
     cartService = server->createService("1cf9e025-5cee-4558-a754-731e27e028ff");
 
-    chJsonItem = cartService->createCharacteristic("20507320-c712-43ed-a240-05d80fd066fd", BLECharacteristic::PROPERTY_INDICATE);
+    chJsonItem = cartService->createCharacteristic("20507320-c712-43ed-a240-05d80fd066fd", BLECharacteristic::PROPERTY_INDICATE | BLECharacteristic::PROPERTY_READ);
     chSku = cartService->createCharacteristic("c4fa2ae9-d7f4-42ac-8042-afde6dc23568", BLECharacteristic::PROPERTY_WRITE);
     chSku->setCallbacks(new ChSkuCallbacks());
 

@@ -5,6 +5,7 @@
 #include <storage.h>
 #include <exceptions.h>
 #include <network.h>
+#include <bluetooth_manager.h>
 
 // temporary boolean for activating cart setup
 #define IS_CART_SETUP true
@@ -31,6 +32,7 @@ void setup(void)
   }
 
   connectToStoreWifi();
+  initBluetooth();
 }
 
 void loop(void)
