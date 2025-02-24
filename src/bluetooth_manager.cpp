@@ -31,9 +31,11 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
 {
     void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
     {
-        String sku = pCharacteristic->getValue().c_str();
-        Serial.print("Sku: "+sku);
-
+        JsonDocument json;
+        String rawJson = pCharacteristic->getValue().c_str();
+        deserializeJson(json, rawJson);
+        String sku = json["sku"];
+        Serial.println("Sku: "+sku);
         HTTPClient http;
         http.begin(backendIp, backendPort, "/products/"+sku);
         http.setTimeout(3000);
