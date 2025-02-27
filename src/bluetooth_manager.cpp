@@ -5,6 +5,7 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <HTTPClient.h>
+#include <list>
 
 static BLEServer *server;
 static BLEService *cartService;
@@ -15,14 +16,18 @@ static BLECharacteristic *chAppState;
 static BLECharacteristic *chOrder;
 static BLECharacteristic *chPaymentInfos;
 static JsonDocument config;
+static std::list<String> itemsList;
 static String backendIp;
 static int backendPort;
 
-class ServerCallbacks : public BLEServerCallbacks {
-	virtual void onConnect(BLEServer* pServer) {
+class ServerCallbacks : public BLEServerCallbacks
+{
+    virtual void onConnect(BLEServer *pServer)
+    {
         Serial.println("Server connected.");
     }
-	virtual void onDisconnect(BLEServer* pServer) {
+    virtual void onDisconnect(BLEServer *pServer)
+    {
         Serial.println("Disconnected !");
     }
 };
@@ -32,17 +37,46 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
     void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
     {
         JsonDocument json;
-        String rawJson = pCharacteristic->getValue().c_str();
-        deserializeJson(json, rawJson);
+        deserializeJson(json, pCharacteristic->getValue().c_str());
+
         String sku = json["sku"];
-        Serial.println("Sku: "+sku);
+        String action = json["action"];
+        Serial.println("Sku: " + sku);
+
+        if (json["action"] == "DEL")
+        {
+            for (auto it = itemsList.begin(); it != itemsList.end(); it++)
+            {
+                if (*it == action)
+                {
+                    itemsList.erase(it);
+                    break;
+                }
+            }
+
+            chJsonItem->setValue("OK");
+            chJsonItem->indicate();
+            return;
+        }
+
         HTTPClient http;
-        http.begin(backendIp, backendPort, "/products/"+sku);
+        http.begin(backendIp, backendPort, "/products/" + sku);
         http.setTimeout(3000);
-        
+
         auto responseCode = http.GET();
-        chJsonItem->setValue(responseCode != 200 ? String(responseCode).c_str() : http.getString().c_str());
+        if (responseCode != 200)
+        {
+            chJsonItem->setValue(String(responseCode).c_str());
+        }
+
+        else
+        {
+            chJsonItem->setValue(http.getString().c_str());
+            itemsList.push_back(sku);
+        }
+
         chJsonItem->indicate();
+        Serial.println("List size : " + String(itemsList.size()));
     }
 };
 
@@ -70,9 +104,9 @@ void initBluetooth()
     auto advertising = BLEDevice::getAdvertising();
     advertising->addServiceUUID(cartService->getUUID());
     BLEDevice::startAdvertising();
-    
+
     Serial.println("Welcome to the server!");
-    Serial.println("Number of connection = "+String(server->getConnectedCount()));
+    Serial.println("Number of connection = " + String(server->getConnectedCount()));
 }
 
 void closeBluetooth()
