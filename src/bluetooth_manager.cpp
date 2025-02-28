@@ -7,6 +7,12 @@
 #include <HTTPClient.h>
 #include <list>
 
+enum AppState {
+    WAITING,
+    CART_LOOP,
+    PAYMENT
+};
+
 static BLEServer *server;
 static BLEService *cartService;
 
@@ -37,7 +43,8 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
     void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
     {
         JsonDocument json;
-        deserializeJson(json, pCharacteristic->getValue().c_str());
+        const char* rawJson = pCharacteristic->getValue().c_str();
+        deserializeJson(json, rawJson);
 
         String sku = json["sku"];
         String action = json["action"];
@@ -54,7 +61,7 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
                 }
             }
 
-            chJsonItem->setValue("OK");
+            chJsonItem->setValue(rawJson);
             chJsonItem->indicate();
             return;
         }
