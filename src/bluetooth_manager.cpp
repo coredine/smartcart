@@ -43,7 +43,7 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
     void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
     {
         JsonDocument json;
-        const char* rawJson = pCharacteristic->getValue().c_str();
+        String rawJson = pCharacteristic->getValue().c_str();
         deserializeJson(json, rawJson);
 
         String sku = json["sku"];
@@ -61,7 +61,7 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
                 }
             }
 
-            chJsonItem->setValue(rawJson);
+            chJsonItem->setValue(rawJson.c_str());
             chJsonItem->indicate();
             return;
         }
