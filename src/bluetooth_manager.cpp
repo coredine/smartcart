@@ -63,6 +63,7 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
 
             chJsonItem->setValue(rawJson.c_str());
             chJsonItem->indicate();
+            Serial.println("List size : " + String(itemsList.size()));
             return;
         }
 
