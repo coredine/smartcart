@@ -6,6 +6,7 @@
 #include <exceptions.h>
 #include <network.h>
 #include <bluetooth_manager.h>
+#include <services.h>
 
 // temporary boolean for activating cart setup
 #define IS_CART_SETUP true
@@ -24,17 +25,12 @@ void setup(void)
     while(1);
   }
 
-  auto config = readConfig();
-
-  if(config.isNull()) {
-    Serial.println("Config empty!");
-    cartInitSetup();
-  }
-
   if(connectToStoreWifi() != WL_CONNECTED) {
     Serial.println("Not able to connect to WiFi store.");
     while (1);
   }
+
+  powerOn();
   
   initBluetooth();
 }
