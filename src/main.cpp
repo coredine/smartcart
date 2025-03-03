@@ -31,7 +31,11 @@ void setup(void)
     cartInitSetup();
   }
 
-  connectToStoreWifi();
+  if(connectToStoreWifi() != WL_CONNECTED) {
+    Serial.println("Not able to connect to WiFi store.");
+    while (1);
+  }
+  
   initBluetooth();
 }
 
