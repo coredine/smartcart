@@ -9,20 +9,23 @@
 
 JsonDocument config;
 
-#define OFF "OFF"
-#define INIT "INIT"
-#define STAND_BY "STAND_BY"
-#define RUNNING "RUNNING"
-#define NEED_HELP "NEED_HELP"
-#define SECURITY_ISSUE "SECURITY_ISSUE"
+String CART_STATE_VALUES[] = {
+    "OFF",
+    "INIT",
+    "STAND_BY",
+    "RUNNING",
+    "NEED_HELP",
+    "SECURITY_ISSUE"
+};
 
-void monitorStatus(String state)
+void monitorStatus(CartState state)
 {
-    Serial.println("Trying to tell the backend that the cart is "+state+".");
+    String stateStr = CART_STATE_VALUES[state];
+    Serial.println("Trying to tell the backend that the cart is "+stateStr+".");
     HTTPClient http;
     http.begin(config["backend"]["ip"], config["backend"]["port"].as<int>(), "/carts/" + getServiceTag() + "/status");
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-    http.POST("state=" + state);
+    http.POST("state=" + stateStr);
 }
 
 void powerOn(void)
@@ -32,11 +35,11 @@ void powerOn(void)
     if (config.isNull())
     {
         Serial.println("Config empty!");
-        monitorStatus("INIT");
+        monitorStatus(CartState::INIT);
         cartInitSetup();
     }
 
-    monitorStatus("STAND_BY");
+    monitorStatus(CartState::STAND_BY);
 }
 
 void powerOff(void)

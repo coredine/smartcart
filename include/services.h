@@ -5,6 +5,16 @@
 
 #include <ArduinoJson.h>
 
+enum CartState {
+    OFF,
+    INIT,
+    STAND_BY,
+    RUNNING,
+    NEED_HELP,
+    SECURITY_ISSUE
+};
+
+void monitorStatus(CartState state);
 void powerOn(void);
 void powerOff(void);
 
