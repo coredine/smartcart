@@ -14,6 +14,7 @@ enum CartState {
     SECURITY_ISSUE
 };
 
+CartState getCartState(void);
 void monitorStatus(CartState state);
 void powerOn(void);
 void powerOff(void);

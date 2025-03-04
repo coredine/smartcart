@@ -1,11 +1,12 @@
 
-#include <bluetooth_manager.h>
-#include <storage.h>
+#include "bluetooth_manager.h"
+#include "storage.h"
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <HTTPClient.h>
 #include <list>
+#include "services.h"
 
 #define AS_IDLE "IDLE"
 #define AS_SCANNING "SCANNING"
@@ -23,7 +24,8 @@ static BLECharacteristic *chPaymentInfos;
 static JsonDocument config;
 static std::list<JsonDocument> itemsList;
 
-enum AppState {
+enum AppState
+{
     IDLE,
     SCANNING,
     CHECKOUT,
@@ -51,7 +53,8 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
 {
     void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
     {
-        if(appState != AppState::SCANNING) {
+        if (appState != AppState::SCANNING)
+        {
             Serial.println("You cannot send a SKU, you are not in the scanning state.");
             return;
         }
@@ -88,7 +91,7 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
         http.setTimeout(3000);
 
         auto responseCode = http.GET();
-        Serial.println("Backend request status is "+ String(responseCode));
+        Serial.println("Backend request status is " + String(responseCode));
         if (responseCode != 200)
         {
             chJsonItem->setValue(String(responseCode).c_str());
@@ -110,16 +113,29 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
     }
 };
 
-class ChAppStateCallbacks : public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param) {
-        appState = (AppState) String(pCharacteristic->getValue().c_str()).toInt();
+class ChAppStateCallbacks : public BLECharacteristicCallbacks
+{
+    void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
+    {
+        appState = (AppState)String(pCharacteristic->getValue().c_str()).toInt();
+
+        if (getCartState() != CartState::RUNNING && (appState == SCANNING || appState == CHECKOUT))
+        {
+            monitorStatus(CartState::RUNNING);
+        }
+
+        // need to handle the other status like END
+
         Serial.println("The new AppState is " + String(appState));
     }
 };
 
-class ChPaymentInfosCallbacks : public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param) {
-        if(appState != AppState::CHECKOUT) {
+class ChPaymentInfosCallbacks : public BLECharacteristicCallbacks
+{
+    void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
+    {
+        if (appState != AppState::CHECKOUT)
+        {
             Serial.println("You cannot send the payment info, you are not in the checkout state.");
             return;
         }
@@ -145,7 +161,7 @@ void initBluetooth()
 
     chAppState = cartService->createCharacteristic("a4ee0286-6010-46b6-8d21-602f1ee38d71", BLECharacteristic::PROPERTY_WRITE);
     chAppState->setCallbacks(new ChAppStateCallbacks());
-    
+
     chOrder = cartService->createCharacteristic("d923866a-17d1-4dee-829d-426e6b57e2b3", BLECharacteristic::PROPERTY_READ);
     chPaymentInfos = cartService->createCharacteristic("0d3401a6-2d29-427d-9a0d-87dd46b302a4", BLECharacteristic::PROPERTY_WRITE);
     chPaymentInfos->setCallbacks(new ChPaymentInfosCallbacks());
