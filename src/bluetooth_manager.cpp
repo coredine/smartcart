@@ -7,11 +7,10 @@
 #include <HTTPClient.h>
 #include <list>
 
-enum AppState {
-    WAITING,
-    CART_LOOP,
-    PAYMENT
-};
+#define AS_IDLE "IDLE"
+#define AS_SCANNING "SCANNING"
+#define AS_CHECKOUT "CHECKOUT"
+#define AS_END "END"
 
 static BLEServer *server;
 static BLEService *cartService;
@@ -24,6 +23,14 @@ static BLECharacteristic *chPaymentInfos;
 static JsonDocument config;
 static std::list<JsonDocument> itemsList;
 
+enum AppState {
+    IDLE,
+    SCANNING,
+    CHECKOUT,
+    END
+};
+
+static AppState appState = AppState::IDLE;
 static String backendIp;
 static int backendPort;
 static double total = 0;
@@ -44,6 +51,11 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
 {
     void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
     {
+        if(appState != AppState::SCANNING) {
+            Serial.println("You cannot send a SKU, you are not in the scanning state.");
+            return;
+        }
+
         JsonDocument json;
         String rawJson = pCharacteristic->getValue().c_str();
         deserializeJson(json, rawJson);
@@ -100,12 +112,18 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
 
 class ChAppStateCallbacks : public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param) {
-        Serial.println("The AppState is " + String(pCharacteristic->getValue().c_str()));
+        appState = (AppState) String(pCharacteristic->getValue().c_str()).toInt();
+        Serial.println("The new AppState is " + String(appState));
     }
 };
 
 class ChPaymentInfosCallbacks : public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param) {
+        if(appState != AppState::CHECKOUT) {
+            Serial.println("You cannot send the payment info, you are not in the checkout state.");
+            return;
+        }
+
         Serial.println("Thanks for your purchase...");
     }
 };
