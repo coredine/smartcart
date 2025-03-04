@@ -12,6 +12,7 @@
 #define IS_CART_SETUP true
 
 const String PROJECT_VERSION = "0.2.1";
+static JsonDocument config;
 
 void setup(void)
 {
@@ -22,8 +23,9 @@ void setup(void)
     Serial.println("The project version is " + PROJECT_VERSION + ".");
 
     initStorage();
+    config = readConfig();
 
-    if (connectToStoreWifi() != WL_CONNECTED)
+    if (!config.isNull() && connectToStoreWifi() != WL_CONNECTED)
     {
       throw smart_cart_error("Not able to connect to WiFi store.", "E-0005");
     }
