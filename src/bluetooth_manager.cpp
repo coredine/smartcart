@@ -22,9 +22,11 @@ static BLECharacteristic *chAppState;
 static BLECharacteristic *chOrder;
 static BLECharacteristic *chPaymentInfos;
 static JsonDocument config;
-static std::list<String> itemsList;
+static std::list<JsonDocument> itemsList;
+
 static String backendIp;
 static int backendPort;
+static double total = 0;
 
 class ServerCallbacks : public BLEServerCallbacks
 {
@@ -54,8 +56,9 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
         {
             for (auto it = itemsList.begin(); it != itemsList.end(); it++)
             {
-                if (*it == action)
+                if ((*it)["sku"] == sku)
                 {
+                    total -= (*it)["price"].as<double>();
                     itemsList.erase(it);
                     break;
                 }
@@ -63,6 +66,7 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
 
             chJsonItem->setValue(rawJson.c_str());
             chJsonItem->indicate();
+            Serial.println("Total : " + String(total));
             Serial.println("List size : " + String(itemsList.size()));
             return;
         }
@@ -72,6 +76,7 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
         http.setTimeout(3000);
 
         auto responseCode = http.GET();
+        Serial.println("Backend request status is "+ String(responseCode));
         if (responseCode != 200)
         {
             chJsonItem->setValue(String(responseCode).c_str());
@@ -79,11 +84,16 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
 
         else
         {
-            chJsonItem->setValue(http.getString().c_str());
-            itemsList.push_back(sku);
+            String rawItem = String(http.getString().c_str());
+            JsonDocument item;
+            deserializeJson(item, rawItem);
+            itemsList.push_back(item);
+            total += item["price"].as<double>();
+            chJsonItem->setValue(rawItem.c_str());
         }
 
         chJsonItem->indicate();
+        Serial.println("Total : " + String(total));
         Serial.println("List size : " + String(itemsList.size()));
     }
 };
