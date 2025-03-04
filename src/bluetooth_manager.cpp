@@ -181,7 +181,7 @@ void initBluetooth()
     chAppState->setCallbacks(new ChAppStateCallbacks());
 
     chOrder = cartService->createCharacteristic("d923866a-17d1-4dee-829d-426e6b57e2b3", BLECharacteristic::PROPERTY_READ);
-    chCheckout = cartService->createCharacteristic("0d3401a6-2d29-427d-9a0d-87dd46b302a4", BLECharacteristic::PROPERTY_WRITE);
+    chCheckout = cartService->createCharacteristic("0d3401a6-2d29-427d-9a0d-87dd46b302a4", BLECharacteristic::PROPERTY_INDICATE | BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
     chCheckout->setCallbacks(new ChCheckoutCallbacks());
 
     cartService->start();
