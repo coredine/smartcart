@@ -20,9 +20,9 @@ static BLECharacteristic *chJsonItem;
 static BLECharacteristic *chSku;
 static BLECharacteristic *chAppState;
 static BLECharacteristic *chOrder;
-static BLECharacteristic *chPaymentInfos;
+static BLECharacteristic *chCheckout;
 static JsonDocument config;
-static std::list<JsonDocument> itemsList;
+static JsonArray itemsArray;
 
 enum AppState
 {
@@ -69,12 +69,12 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
 
         if (json["action"] == "DEL")
         {
-            for (auto it = itemsList.begin(); it != itemsList.end(); it++)
+            for (auto it = itemsArray.begin(); it != itemsArray.end(); ++it)
             {
                 if ((*it)["sku"] == sku)
                 {
                     total -= (*it)["price"].as<double>();
-                    itemsList.erase(it);
+                    itemsArray.remove(it);
                     break;
                 }
             }
@@ -82,7 +82,7 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
             chJsonItem->setValue(rawJson.c_str());
             chJsonItem->indicate();
             Serial.println("Total : " + String(total));
-            Serial.println("List size : " + String(itemsList.size()));
+            Serial.println("List size : " + String(itemsArray.size()));
             return;
         }
 
@@ -102,14 +102,14 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
             String rawItem = String(http.getString().c_str());
             JsonDocument item;
             deserializeJson(item, rawItem);
-            itemsList.push_back(item);
+            itemsArray.add(item);
             total += item["price"].as<double>();
             chJsonItem->setValue(rawItem.c_str());
         }
 
         chJsonItem->indicate();
         Serial.println("Total : " + String(total));
-        Serial.println("List size : " + String(itemsList.size()));
+        Serial.println("List size : " + String(itemsArray.size()));
     }
 };
 
@@ -130,7 +130,7 @@ class ChAppStateCallbacks : public BLECharacteristicCallbacks
     }
 };
 
-class ChPaymentInfosCallbacks : public BLECharacteristicCallbacks
+class ChCheckoutCallbacks : public BLECharacteristicCallbacks
 {
     void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
     {
@@ -140,7 +140,21 @@ class ChPaymentInfosCallbacks : public BLECharacteristicCallbacks
             return;
         }
 
-        Serial.println("Thanks for your purchase...");
+        Serial.println("Welcome to checkout!");
+
+        HTTPClient http;
+        http.begin(backendIp, backendPort, "/order/process");
+        JsonDocument body;
+        deserializeJson(body, pCharacteristic->getValue().c_str());
+        body["products"] = itemsArray;
+        body["total"] = total;
+        body["serviceTag"] = getServiceTag();
+
+        auto responseStatus = http.POST(body.as<String>());
+        Serial.println("Response status "+String(responseStatus));
+        
+        chCheckout->setValue(http.getString().c_str());
+        chCheckout->indicate();
     }
 };
 
@@ -163,8 +177,8 @@ void initBluetooth()
     chAppState->setCallbacks(new ChAppStateCallbacks());
 
     chOrder = cartService->createCharacteristic("d923866a-17d1-4dee-829d-426e6b57e2b3", BLECharacteristic::PROPERTY_READ);
-    chPaymentInfos = cartService->createCharacteristic("0d3401a6-2d29-427d-9a0d-87dd46b302a4", BLECharacteristic::PROPERTY_WRITE);
-    chPaymentInfos->setCallbacks(new ChPaymentInfosCallbacks());
+    chCheckout = cartService->createCharacteristic("0d3401a6-2d29-427d-9a0d-87dd46b302a4", BLECharacteristic::PROPERTY_WRITE);
+    chCheckout->setCallbacks(new ChCheckoutCallbacks());
 
     cartService->start();
 
