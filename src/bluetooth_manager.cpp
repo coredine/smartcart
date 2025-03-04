@@ -88,6 +88,12 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
     }
 };
 
+class ChAppStateCallbacks : public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param) {
+        Serial.println("The AppState is " + String(pCharacteristic->getValue().c_str()));
+    }
+};
+
 void initBluetooth()
 {
     config = readConfig();
@@ -104,6 +110,8 @@ void initBluetooth()
     chSku->setCallbacks(new ChSkuCallbacks());
 
     chAppState = cartService->createCharacteristic("a4ee0286-6010-46b6-8d21-602f1ee38d71", BLECharacteristic::PROPERTY_WRITE);
+    chAppState->setCallbacks(new ChAppStateCallbacks());
+    
     chOrder = cartService->createCharacteristic("d923866a-17d1-4dee-829d-426e6b57e2b3", BLECharacteristic::PROPERTY_READ);
     chPaymentInfos = cartService->createCharacteristic("0d3401a6-2d29-427d-9a0d-87dd46b302a4", BLECharacteristic::PROPERTY_WRITE);
 
