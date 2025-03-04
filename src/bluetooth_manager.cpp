@@ -22,7 +22,8 @@ static BLECharacteristic *chAppState;
 static BLECharacteristic *chOrder;
 static BLECharacteristic *chCheckout;
 static JsonDocument config;
-static JsonArray itemsArray;
+static JsonDocument order;
+static JsonArray productsArray;
 
 enum AppState
 {
@@ -69,12 +70,12 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
 
         if (json["action"] == "DEL")
         {
-            for (auto it = itemsArray.begin(); it != itemsArray.end(); ++it)
+            for (auto it = productsArray.begin(); it != productsArray.end(); ++it)
             {
                 if ((*it)["sku"] == sku)
                 {
                     total -= (*it)["price"].as<double>();
-                    itemsArray.remove(it);
+                    productsArray.remove(it);
                     break;
                 }
             }
@@ -82,7 +83,7 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
             chJsonItem->setValue(rawJson.c_str());
             chJsonItem->indicate();
             Serial.println("Total : " + String(total));
-            Serial.println("List size : " + String(itemsArray.size()));
+            Serial.println("List size : " + String(productsArray.size()));
             return;
         }
 
@@ -102,14 +103,14 @@ class ChSkuCallbacks : public BLECharacteristicCallbacks
             String rawItem = String(http.getString().c_str());
             JsonDocument item;
             deserializeJson(item, rawItem);
-            itemsArray.add(item);
+            productsArray.add(item);
             total += item["price"].as<double>();
             chJsonItem->setValue(rawItem.c_str());
         }
 
         chJsonItem->indicate();
         Serial.println("Total : " + String(total));
-        Serial.println("List size : " + String(itemsArray.size()));
+        Serial.println("List size : " + String(productsArray.size()));
     }
 };
 
@@ -144,11 +145,12 @@ class ChCheckoutCallbacks : public BLECharacteristicCallbacks
 
         HTTPClient http;
         http.begin(backendIp, backendPort, "/order/process");
+        http.addHeader("Content-Type", "application/json");
         JsonDocument body;
         deserializeJson(body, pCharacteristic->getValue().c_str());
-        body["products"] = itemsArray;
         body["total"] = total;
         body["serviceTag"] = getServiceTag();
+        body["products"] = productsArray;
 
         auto responseStatus = http.POST(body.as<String>());
         Serial.println("Response status "+String(responseStatus));
@@ -160,6 +162,8 @@ class ChCheckoutCallbacks : public BLECharacteristicCallbacks
 
 void initBluetooth()
 {
+    productsArray = order.createNestedArray("products");
+
     config = readConfig();
     backendIp = config["backend"]["ip"].as<String>();
     backendPort = config["backend"]["port"].as<int>();
