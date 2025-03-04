@@ -15,27 +15,31 @@ const String PROJECT_VERSION = "0.2.1";
 
 void setup(void)
 {
-  Serial.begin(9600);
-  Serial.println("The project version is " + PROJECT_VERSION + ".");
+  try
+  {
 
-  try {
+    Serial.begin(9600);
+    Serial.println("The project version is " + PROJECT_VERSION + ".");
+
     initStorage();
-  } catch(smart_cart_error &e) {
-    Serial.print(String(e.what()));
-    while(1);
-  }
 
-  if(connectToStoreWifi() != WL_CONNECTED) {
-    Serial.println("Not able to connect to WiFi store.");
+    if (connectToStoreWifi() != WL_CONNECTED)
+    {
+      throw smart_cart_error("Not able to connect to WiFi store.", "E-0005");
+    }
+
+    powerOn();
+
+    initBluetooth();
+  }
+  catch (smart_cart_error &e)
+  {
+    Serial.println("Error : " + String(e.what()));
+    Serial.println("Error code : " + String(e.getErrorCode()));
     while (1);
   }
-
-  powerOn();
-  
-  initBluetooth();
 }
 
 void loop(void)
 {
-
 }

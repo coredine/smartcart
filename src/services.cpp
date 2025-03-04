@@ -25,13 +25,21 @@ CartState getCartState(void) {
 
 void monitorStatus(CartState state)
 {
-    cartState = state;
     String stateStr = CART_STATE_VALUES[state];
     Serial.println("Trying to tell the backend that the cart is "+stateStr+".");
     HTTPClient http;
     http.begin(config["backend"]["ip"], config["backend"]["port"].as<int>(), "/carts/" + getServiceTag() + "/status");
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-    http.POST("state=" + stateStr);
+    auto response = http.POST("state=" + stateStr);
+
+    if(response == 404) {
+        throw smart_cart_error("The cart does not exists on the system", "E-0008");
+    } else if(response == 400) {
+        Serial.println("Invalid CartState, no change will be made.");
+        return;
+    }
+
+    cartState = state;
 }
 
 void powerOn(void)
