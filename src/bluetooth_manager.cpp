@@ -125,7 +125,12 @@ class ChAppStateCallbacks : public BLECharacteristicCallbacks
             monitorStatus(CartState::RUNNING);
         }
 
-        // need to handle the other status like END
+        if(appState == AppState::END) {
+            total = 0;
+            productsArray.clear();
+            appState = AppState::IDLE;
+            monitorStatus(CartState::STAND_BY);
+        }
 
         Serial.println("The new AppState is " + String(appState));
     }
