@@ -32,19 +32,7 @@ String randomPassword(void)
 
 void cartInitSetup(void)
 {
-  try
-  {
-    initStorage();
-  }
-  catch (smart_cart_error &e)
-  {
-    Serial.print("Exception is " + String(e.what()));
-    // Need to print the error on the screen and to wait until the user does an action
-    // the wainting loop should be in a universal function.
-    while (1)
-      ;
-  }
-
+  Serial.println("Starting the initialisation process...");
   String apPassword = randomPassword();
   Serial.println("The Access Point password is " + apPassword);
   serviceTag = getServiceTag();
@@ -54,9 +42,7 @@ void cartInitSetup(void)
 
   if (!WiFi.softAP(serviceTag, apPassword))
   {
-    Serial.println("Soft AP creation failed.");
-    while (1)
-      ;
+    throw new smart_cart_error("Soft AP creation failed.", "E-0009");
   }
 
   Serial.println("The ip Address is : ");
@@ -83,7 +69,6 @@ void cartInitSetup(void)
 
 std::tuple<int, String> requestSystemEntry(String ip, int port, JsonDocument body)
 {
-
   HTTPClient http;
   http.begin(ip, port, "/carts");
   http.addHeader("Content-Type", "application/json");
