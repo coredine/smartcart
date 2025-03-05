@@ -114,3 +114,7 @@ JsonDocument readConfig(void)
 
     return config;
 }
+
+void deleteConfig(void) {
+    LittleFS.remove(configPath);
+}

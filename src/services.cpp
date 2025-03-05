@@ -31,9 +31,14 @@ void monitorStatus(CartState state)
     http.begin(config["backend"]["ip"], config["backend"]["port"].as<int>(), "/carts/" + getServiceTag() + "/status");
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
     auto response = http.POST("state=" + stateStr);
-
+    Serial.println("Backend responded with "+ String(response));
+    
     if(response == 404) {
-        throw smart_cart_error("The cart does not exists on the system", "E-0008");
+        Serial.println("The cart is not registered in the system.");
+        Serial.println("Starting the reset process...");
+        deleteConfig();
+        Serial.println("Restart the SmartCart...");
+        ESP.restart();
     } else if(response == 400) {
         Serial.println("Invalid CartState, no change will be made.");
         return;
