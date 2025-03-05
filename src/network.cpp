@@ -10,8 +10,7 @@ wl_status_t connectToStoreWifi(String storeSsid, String storePassword)
     return status;
 }
 
-wl_status_t connectToStoreWifi()
+wl_status_t connectToStoreWifi(JsonDocument config)
 {
-    auto config = readConfig();
     return connectToStoreWifi(config["wifi"]["ssid"], config["wifi"]["password"]);
 }

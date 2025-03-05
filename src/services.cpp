@@ -49,8 +49,12 @@ void powerOn(void)
     if (config.isNull())
     {
         Serial.println("Config empty!");
-        monitorStatus(CartState::INIT);
         cartInitSetup();
+    }
+
+    if (connectToStoreWifi(config) != WL_CONNECTED)
+    {
+      throw smart_cart_error("Not able to connect to WiFi store.", "E-0005");
     }
 
     monitorStatus(CartState::STAND_BY);
