@@ -138,8 +138,7 @@ void initCart(void)
   {
     saveConfig(storeSsid, storePassword, server.arg("ip"), server.arg("port"));
     setupCompleted = true;
-    sendJsonMessage(201, "Cart successfuly added, it will restart now...");
-    ESP.restart();
+    sendJsonMessage(201, "The cart was successfuly added. The next step is to restart the cart.");
     return;
   }
   else
