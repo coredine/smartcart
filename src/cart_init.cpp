@@ -16,6 +16,7 @@ String serviceTag;
 
 void initCart(void);
 void notFound(void);
+void sendJsonMessage(int status, String message);
 
 String randomPassword(void)
 {
@@ -93,7 +94,7 @@ void initCart(void)
 {
   if (setupCompleted)
   {
-    server.send(403, "application/json", "Cart already setup.");
+    sendJsonMessage(403, "Cart already setup.");
     return;
   }
 
@@ -107,16 +108,16 @@ void initCart(void)
   switch (wiFiStatus)
   {
   case WL_NO_SSID_AVAIL:
-    server.send(404, "application/json", "The network \"" + storeSsid + "\" does not exists.");
+    sendJsonMessage(404, "The network \"" + storeSsid + "\" does not exists.");
     return;
   case WL_CONNECT_FAILED:
-    server.send(400, "application/json", "Enable to connect to \"" + storeSsid + "\", it maybe due to an invalid password.");
+    sendJsonMessage(400, "Enable to connect to \"" + storeSsid + "\", it maybe due to an invalid password.");
     return;
   case WL_CONNECTED:
     Serial.println("WiFi connection establish.");
     break;
   default:
-    server.send(500, "application/json", "Internal Server Error.");
+    sendJsonMessage(500, "Internal SmartCart Error.");
     return;
   }
 
@@ -129,7 +130,7 @@ void initCart(void)
 
   if (responseStatus == -1)
   {
-    server.send(408, "application/json", "The SmartCart is enable to join the server. Verify that you have specify the right url or that the server is on the \"" + storeSsid + "\" network.");
+    sendJsonMessage(408, "The SmartCart is enable to join the server. Verify that you have specify the right url or that the server is on the \"" + storeSsid + "\" network.");
     return;
   }
 
@@ -137,18 +138,26 @@ void initCart(void)
   {
     saveConfig(storeSsid, storePassword, server.arg("ip"), server.arg("port"));
     setupCompleted = true;
-    server.send(201, "application/json", "Cart successfuly added, it will restart now...");
+    sendJsonMessage(201, "Cart successfuly added, it will restart now...");
     ESP.restart();
     return;
   }
   else
   {
-    server.send(responseStatus, "application/json", responseBody);
+    sendJsonMessage(responseStatus, responseBody);
     return;
   }
 }
 
 void notFound(void)
 {
-  server.send(404, "application/json", "Not Found");
+  sendJsonMessage(404, "Not Found");
+}
+
+void sendJsonMessage(int status, String message)
+{
+  JsonDocument body;
+  body["message"] = message;
+  server.send(status, "application/json", body.as<String>());
+  body.clear();
 }
