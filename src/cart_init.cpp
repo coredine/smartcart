@@ -50,6 +50,7 @@ void cartInitSetup(void)
   Serial.println(WiFi.softAPIP());
 
   server.serveStatic("/setup.html", LittleFS, "/public/setup.html");
+  server.serveStatic("/store.webp", LittleFS, "/public/store.webp");
 
   server.on("/setup", HTTP_GET, []
             {
