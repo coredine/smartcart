@@ -139,7 +139,8 @@ void initCart(void)
     saveConfig(storeSsid, storePassword, server.arg("ip"), server.arg("port"));
     setupCompleted = true;
     sendJsonMessage(201, "The cart was successfuly added. The next step is to restart the cart.");
-    return;
+    // Empty loop until restart
+    while (1);
   }
   else
   {
@@ -158,5 +159,6 @@ void sendJsonMessage(int status, String message)
   JsonDocument body;
   body["message"] = message;
   server.send(status, "application/json", body.as<String>());
+  Serial.println("Sent to the client: "+message);
   body.clear();
 }
