@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup SmartCart</title>
+</head>
+
+<body>
+    <form method="post" action="/init" style="width: 400px; display: flex; flex-direction: column; gap: 10px">
+        <h1 style="margin: 0px;">Cart Initialization</h1>
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <h2 style="margin: 0px;">Wifi Info</h2> <input required name="ssid" type="text" placeholder="SSID*" />
+                <input required name="password" type="password" placeholder="Password*" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <h2 style="margin: 0px;">Backend info</h2>
+                <input required name="ip" type="text" placeholder="IP*" />
+                <input required name="port" type="number" placeholder="Port*" />
+                <!-- For now it is an input, normal it is stored in the cart SD. -->
+                <input required name="securityCode" type="text" placeholder="Security Code*" />
+            </div>
+        </div>
+        
+        <button style="width: 70px;">Submit</button>
+    </form>
+</body>
+
+</html>

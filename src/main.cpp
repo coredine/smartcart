@@ -1,14 +1,39 @@
 #include <Arduino.h>
+#include <WiFi.h>
+#include <WebServer.h>
+#include "cart_init.h"
+#include <storage.h>
+#include <exceptions.h>
+#include <network.h>
 
-#define BUILT_IN_LED 2
+// temporary boolean for activating cart setup
+#define IS_CART_SETUP true
 
-void setup() {
-  pinMode(BUILT_IN_LED, OUTPUT);
+const String PROJECT_VERSION = "0.2.1";
+
+void setup(void)
+{
+  Serial.begin(9600);
+  Serial.println("The project version is " + PROJECT_VERSION + ".");
+
+  try {
+    initStorage();
+  } catch(smart_cart_error &e) {
+    Serial.print(String(e.what()));
+    while(1);
+  }
+
+  auto config = readConfig();
+
+  if(config.isNull()) {
+    Serial.println("Config empty!");
+    cartInitSetup();
+  }
+
+  connectToStoreWifi();
 }
 
-void loop() {
-  delay(3000);
-  digitalWrite(BUILT_IN_LED, LOW);
-  delay(3000);
-  digitalWrite(BUILT_IN_LED, HIGH);
+void loop(void)
+{
+
 }
