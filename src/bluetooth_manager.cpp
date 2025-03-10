@@ -125,7 +125,13 @@ class ChAppStateCallbacks : public BLECharacteristicCallbacks
             monitorStatus(CartState::RUNNING);
         }
 
-        // need to handle the other status like END
+        if (appState == AppState::END)
+        {
+            total = 0;
+            productsArray.clear();
+            appState = AppState::IDLE;
+            monitorStatus(CartState::STAND_BY);
+        }
 
         Serial.println("The new AppState is " + String(appState));
     }
@@ -153,8 +159,8 @@ class ChCheckoutCallbacks : public BLECharacteristicCallbacks
         body["products"] = productsArray;
 
         auto responseStatus = http.POST(body.as<String>());
-        Serial.println("Response status "+String(responseStatus));
-        
+        Serial.println("Response status " + String(responseStatus));
+
         chCheckout->setValue(http.getString().c_str());
         chCheckout->indicate();
     }
@@ -190,8 +196,7 @@ void initBluetooth()
     advertising->addServiceUUID(cartService->getUUID());
     BLEDevice::startAdvertising();
 
-    Serial.println("Welcome to the server!");
-    Serial.println("Number of connection = " + String(server->getConnectedCount()));
+    Serial.println("\nThe ESP32 Bluetooth Address is: " + String(BLEDevice::getAddress().toString().c_str())+".\n");
 }
 
 void closeBluetooth()

@@ -11,5 +11,6 @@ void initStorage(void);
 void closeStorage(void);
 void saveConfig(String storeSsid, String storePassword, String backendIp, String backendPort);
 JsonDocument readConfig(void);
+void deleteConfig(void);
 
 #endif /* STORAGE_H */

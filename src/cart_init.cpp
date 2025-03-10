@@ -16,6 +16,7 @@ String serviceTag;
 
 void initCart(void);
 void notFound(void);
+void sendJsonMessage(int status, String message);
 
 String randomPassword(void)
 {
@@ -32,19 +33,7 @@ String randomPassword(void)
 
 void cartInitSetup(void)
 {
-  try
-  {
-    initStorage();
-  }
-  catch (smart_cart_error &e)
-  {
-    Serial.print("Exception is " + String(e.what()));
-    // Need to print the error on the screen and to wait until the user does an action
-    // the wainting loop should be in a universal function.
-    while (1)
-      ;
-  }
-
+  Serial.println("Starting the initialisation process...");
   String apPassword = randomPassword();
   Serial.println("The Access Point password is " + apPassword);
   serviceTag = getServiceTag();
@@ -54,15 +43,14 @@ void cartInitSetup(void)
 
   if (!WiFi.softAP(serviceTag, apPassword))
   {
-    Serial.println("Soft AP creation failed.");
-    while (1)
-      ;
+    throw new smart_cart_error("Soft AP creation failed.", "E-0009");
   }
 
   Serial.println("The ip Address is : ");
   Serial.println(WiFi.softAPIP());
 
   server.serveStatic("/setup.html", LittleFS, "/public/setup.html");
+  server.serveStatic("/store.webp", LittleFS, "/public/store.webp");
 
   server.on("/setup", HTTP_GET, []
             {
@@ -83,7 +71,6 @@ void cartInitSetup(void)
 
 std::tuple<int, String> requestSystemEntry(String ip, int port, JsonDocument body)
 {
-
   HTTPClient http;
   http.begin(ip, port, "/carts");
   http.addHeader("Content-Type", "application/json");
@@ -108,7 +95,7 @@ void initCart(void)
 {
   if (setupCompleted)
   {
-    server.send(403, "application/json", "Cart already setup.");
+    sendJsonMessage(403, "Cart already setup.");
     return;
   }
 
@@ -122,16 +109,16 @@ void initCart(void)
   switch (wiFiStatus)
   {
   case WL_NO_SSID_AVAIL:
-    server.send(404, "application/json", "The network \"" + storeSsid + "\" does not exists.");
+    sendJsonMessage(404, "The network \"" + storeSsid + "\" does not exists.");
     return;
   case WL_CONNECT_FAILED:
-    server.send(400, "application/json", "Enable to connect to \"" + storeSsid + "\", it maybe due to an invalid password.");
+    sendJsonMessage(400, "Enable to connect to \"" + storeSsid + "\", it maybe due to an invalid password.");
     return;
   case WL_CONNECTED:
     Serial.println("WiFi connection establish.");
     break;
   default:
-    server.send(500, "application/json", "Internal Server Error.");
+    sendJsonMessage(500, "Internal SmartCart Error.");
     return;
   }
 
@@ -144,7 +131,7 @@ void initCart(void)
 
   if (responseStatus == -1)
   {
-    server.send(408, "application/json", "The SmartCart is enable to join the server. Verify that you have specify the right url or that the server is on the \"" + storeSsid + "\" network.");
+    sendJsonMessage(408, "The SmartCart is enable to join the server. Verify that you have specify the right url or that the server is on the \"" + storeSsid + "\" network.");
     return;
   }
 
@@ -152,17 +139,27 @@ void initCart(void)
   {
     saveConfig(storeSsid, storePassword, server.arg("ip"), server.arg("port"));
     setupCompleted = true;
-    server.send(201, "application/json", "The cart was successfuly added. The next step is to restart the cart.");
-    return;
+    sendJsonMessage(201, "The cart was successfuly added. The next step is to restart the cart.");
+    // Empty loop until restart
+    while (1);
   }
   else
   {
-    server.send(responseStatus, "application/json", responseBody);
+    sendJsonMessage(responseStatus, responseBody);
     return;
   }
 }
 
 void notFound(void)
 {
-  server.send(404, "application/json", "Not Found");
+  sendJsonMessage(404, "Not Found");
+}
+
+void sendJsonMessage(int status, String message)
+{
+  JsonDocument body;
+  body["message"] = message;
+  server.send(status, "application/json", body.as<String>());
+  Serial.println("Sent to the client: "+message);
+  body.clear();
 }

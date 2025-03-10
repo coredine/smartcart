@@ -5,27 +5,109 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Setup SmartCart</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: row;
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: white;
+        }
+
+        .sm_input {
+            border: none;
+            box-shadow: 0px 1px 3px 0px grey;
+            border-radius: 5px;
+            padding-left: 7px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            font-size: 15px;
+        }
+
+        .sm_submit {
+            border: none;
+            color: white;
+            background-color: rgb(0, 98, 255);
+            border-radius: 5px;
+            padding: 7px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .sm_submit:focus {
+            background-color: rgb(74, 165, 250);
+        }
+
+        .sm_form {
+            display: flex;
+            justify-content: center;
+            padding: 15px;
+            padding-top: 30px;
+            padding-bottom: 30px;
+            width: 30%;
+        }
+
+        .sm_title {
+            margin: 0px;
+            font-size: 30px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 21px;
+        }
+
+        .sm_bg_image {
+            width: 70%;
+            height: 100%;
+        }
+
+        .sm_info_section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        @media (max-width:1200px) {
+            .sm_bg_image {
+                display: none;
+            }
+
+            .sm_form {
+                margin: 0 auto;
+                width: auto;
+                border-radius: 10px;
+                box-shadow: 0px 1px 3px 0px grey;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <form method="post" action="/init" style="width: 400px; display: flex; flex-direction: column; gap: 10px">
-        <h1 style="margin: 0px;">Cart Initialization</h1>
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <h2 style="margin: 0px;">Wifi Info</h2> <input required name="ssid" type="text" placeholder="SSID*" />
-                <input required name="password" type="password" placeholder="Password*" />
+    <img class="sm_bg_image" src="store.webp" />
+
+    <div class="sm_form">
+        <form method="post" action="/init" style="width: 400px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; flex-direction: column; gap: 25px;">
+                <h1 class="sm_title">SmartCart Setup</h1>
+
+                <div class="sm_info_section">
+                    <h2 style="margin: 0px;">Wifi Info</h2>
+                    <input class="sm_input" required name="ssid" type="text" placeholder="SSID*" />
+                    <input class="sm_input" required name="password" type="password" placeholder="Password*" />
+                </div>
+
+                <div class="sm_info_section">
+                    <h2 style="margin: 0px;">Backend Info</h2>
+                    <input class="sm_input" required name="ip" type="text" placeholder="IP*" />
+                    <input class="sm_input" required name="port" type="number" placeholder="Port*" />
+                    <input class="sm_input" required name="securityCode" type="text" placeholder="Security Code*" />
+                </div>
+
+                <button class="sm_submit" style="width: 70px;">Submit</button>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <h2 style="margin: 0px;">Backend info</h2>
-                <input required name="ip" type="text" placeholder="IP*" />
-                <input required name="port" type="number" placeholder="Port*" />
-                <!-- For now it is an input, normal it is stored in the cart SD. -->
-                <input required name="securityCode" type="text" placeholder="Security Code*" />
-            </div>
-        </div>
-        
-        <button style="width: 70px;">Submit</button>
-    </form>
+        </form>
+    </div>
 </body>
 
 </html>
