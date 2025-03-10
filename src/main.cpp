@@ -5,6 +5,8 @@
 #include <storage.h>
 #include <exceptions.h>
 #include <network.h>
+#include <bluetooth_manager.h>
+#include <services.h>
 
 // temporary boolean for activating cart setup
 #define IS_CART_SETUP true
@@ -13,27 +15,23 @@ const String PROJECT_VERSION = "0.2.1";
 
 void setup(void)
 {
-  Serial.begin(9600);
-  Serial.println("The project version is " + PROJECT_VERSION + ".");
+  try
+  {
+    Serial.begin(9600);
+    Serial.println("The project version is " + PROJECT_VERSION + ".");
 
-  try {
     initStorage();
-  } catch(smart_cart_error &e) {
-    Serial.print(String(e.what()));
-    while(1);
+    powerOn();
+    initBluetooth();
   }
-
-  auto config = readConfig();
-
-  if(config.isNull()) {
-    Serial.println("Config empty!");
-    cartInitSetup();
+  catch (smart_cart_error &e)
+  {
+    Serial.println("Error : " + String(e.what()));
+    Serial.println("Error code : " + String(e.getErrorCode()));
+    while (1);
   }
-
-  connectToStoreWifi();
 }
 
 void loop(void)
 {
-
 }
